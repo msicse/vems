@@ -6,7 +6,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DriversController;
+use App\Http\Controllers\DebugController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\DashboardController;
@@ -36,6 +38,9 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Debug route for checking authentication
+    Route::get('/debug/auth', [DebugController::class, 'authCheck'])->name('debug.auth');
+
     Route::resource('products', ProductController::class);
     Route::get('products-export', [ProductController::class, 'export'])->name('products.export');
 
@@ -50,6 +55,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/users/{user}/driver-status', [UserController::class, 'updateDriverStatus'])->name('users.update-driver-status');
     Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
     Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
+
+    // Department management routes
+    Route::resource('departments', DepartmentController::class);
+    Route::patch('/departments/{department}/toggle-status', [DepartmentController::class, 'toggleStatus'])->name('departments.toggle-status');
+    Route::get('/departments/export', [DepartmentController::class, 'export'])->name('departments.export');
+    Route::post('/departments/import', [DepartmentController::class, 'import'])->name('departments.import');
 
     // Drivers management routes
     Route::resource('drivers', DriversController::class)->except(['create', 'store']);

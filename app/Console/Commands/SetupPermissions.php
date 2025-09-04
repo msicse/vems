@@ -38,6 +38,12 @@ class SetupPermissions extends Command
             'edit-users',
             'delete-users',
 
+            // Department permissions
+            'view-departments',
+            'create-departments',
+            'edit-departments',
+            'delete-departments',
+
             // Vehicle permissions
             'view-vehicles',
             'create-vehicles',
@@ -94,6 +100,7 @@ class SetupPermissions extends Command
         // Assign basic permissions to Manager
         $managerPermissions = [
             'view-users', 'edit-users',
+            'view-departments', 'edit-departments',
             'view-vehicles', 'edit-vehicles',
             'view-products', 'edit-products',
             'view-vendors', 'edit-vendors',
@@ -103,6 +110,7 @@ class SetupPermissions extends Command
 
         // Assign view permissions to Employee
         $employeePermissions = [
+            'view-departments',
             'view-vehicles',
             'view-products',
             'view-vendors',

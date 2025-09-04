@@ -46,9 +46,7 @@ class Department extends Model
      */
     public function drivers()
     {
-        return $this->users()->whereHas('designation', function ($query) {
-            $query->where('can_drive', true);
-        });
+        return $this->users()->whereIn('user_type', ['driver', 'transport_manager']);
     }
 
     /**
