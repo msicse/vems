@@ -46,6 +46,8 @@ class StoreUserRequest extends FormRequest
             // User Classification
             'user_type' => ['required', 'string', 'in:employee,driver,transport_manager,admin'],
             'department_id' => ['nullable', 'exists:departments,id'],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['exists:roles,id'],
             'blood_group' => ['nullable', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'status' => ['required', 'string', 'in:active,inactive,suspended'],
 
@@ -86,6 +88,9 @@ class StoreUserRequest extends FormRequest
             'probation_end_date.after' => 'Probation end date must be after joining date.',
             'image.max' => 'Profile image must not be larger than 2MB.',
             'photo.max' => 'Photo must not be larger than 2MB.',
+            'roles.required' => 'At least one role must be selected.',
+            'roles.min' => 'At least one role must be selected.',
+            'roles.*.exists' => 'One or more selected roles are invalid.',
         ];
     }
 

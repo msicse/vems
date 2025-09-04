@@ -12,7 +12,25 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->user()->can('edit-users');
+        $user = auth()->user();
+
+        // Allow Super Admin role (via AppServiceProvider Gate)
+        if ($user->hasRole('super-admin')) {
+            return true;
+        }
+
+        // Allow admin user type
+        if ($user->user_type === 'admin') {
+            return true;
+        }
+
+        // Allow users to edit their own profile (basic fields only)
+        if ($this->route('user')->id === $user->id) {
+            return true;
+        }
+
+        // Check for edit-users permission (if it exists)
+        return $user->can('edit-users');
     }
 
     /**
@@ -48,6 +66,8 @@ class UpdateUserRequest extends FormRequest
             // User Classification
             'user_type' => ['required', 'string', 'in:employee,driver,transport_manager,admin'],
             'department_id' => ['nullable', 'exists:departments,id'],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['exists:roles,id'],
             'blood_group' => ['nullable', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'status' => ['required', 'string', 'in:active,inactive,suspended'],
 
@@ -88,6 +108,9 @@ class UpdateUserRequest extends FormRequest
             'probation_end_date.after' => 'Probation end date must be after joining date.',
             'image.max' => 'Profile image must not be larger than 2MB.',
             'photo.max' => 'Photo must not be larger than 2MB.',
+            'roles.required' => 'At least one role must be selected.',
+            'roles.min' => 'At least one role must be selected.',
+            'roles.*.exists' => 'One or more selected roles are invalid.',
         ];
     }
 

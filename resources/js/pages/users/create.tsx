@@ -2,7 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, XCircle, User, Car, Shield, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, User, Car, Shield, Settings } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { PageHeader } from '@/base-components/page-header';
 import {
@@ -11,7 +11,8 @@ import {
   FormSelect,
   FormTextarea,
   FormFileUpload,
-  FormDatePicker
+  FormDatePicker,
+  FormMultiSelect
 } from '@/base-components/base-form';
 import {
   useFormValidation,
@@ -38,14 +39,18 @@ type UserForm = {
   email: string;
   user_type: string;
   department_id: string;
+  roles: string[];
   official_phone: string;
   personal_phone: string;
+  whatsapp_id: string;
   emergency_phone: string;
   emergency_contact_name: string;
   emergency_contact_relation: string;
   present_address: string;
   permanent_address: string;
   blood_group: string;
+  nid_number: string;
+  passport_number: string;
   driving_license_no: string;
   license_class: string;
   license_issue_date: string;
@@ -61,6 +66,7 @@ type UserForm = {
 
 interface CreateUserProps {
   departments: Array<{ id: number; name: string }>;
+  roles: Array<{ id: number; name: string }>;
   userTypes: Array<{ value: string; label: string }>;
   licenseClasses: Array<{ value: string; label: string }>;
   bloodGroups: Array<{ value: string; label: string }>;
@@ -94,29 +100,7 @@ const enhancedUserTypeOptions = [
   }
 ];
 
-// Enhanced status options
-const enhancedStatusOptions = [
-  {
-    label: "Active",
-    value: "active",
-    icon: <CheckCircle className="h-4 w-4 text-green-600" />,
-    description: "User is active and can access the system"
-  },
-  {
-    label: "Inactive",
-    value: "inactive",
-    icon: <Clock className="h-4 w-4 text-amber-600" />,
-    description: "User account is temporarily disabled"
-  },
-  {
-    label: "Suspended",
-    value: "suspended",
-    icon: <XCircle className="h-4 w-4 text-red-600" />,
-    description: "User account is suspended due to violations"
-  }
-];
-
-export default function CreateUser({ departments, userTypes, licenseClasses, bloodGroups }: CreateUserProps) {
+export default function CreateUser({ departments, roles, userTypes, licenseClasses, bloodGroups }: CreateUserProps) {
   const { data, setData, post, processing, errors: serverErrors, reset } = useForm<UserForm>({
     name: '',
     username: '',
@@ -124,14 +108,18 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
     email: '',
     user_type: 'employee',
     department_id: '',
+    roles: [],
     official_phone: '',
     personal_phone: '',
+    whatsapp_id: '',
     emergency_phone: '',
     emergency_contact_name: '',
     emergency_contact_relation: '',
     present_address: '',
     permanent_address: '',
     blood_group: '',
+    nid_number: '',
+    passport_number: '',
     driving_license_no: '',
     license_class: '',
     license_issue_date: '',
@@ -166,6 +154,12 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
       commonValidationRules.required('User type is required'),
       commonValidationRules.oneOf(['employee', 'driver', 'transport_manager', 'admin'], 'Invalid user type selected')
     ],
+    roles: [
+      (value) => {
+        if (!value || value.length === 0) return 'At least one role is required';
+        return undefined;
+      }
+    ],
     password: [
       commonValidationRules.required('Password is required'),
       commonValidationRules.minLength(8, 'Password must be at least 8 characters')
@@ -176,6 +170,22 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
         if (value !== data.password) return 'Passwords do not match';
         return undefined;
       }
+    ],
+    whatsapp_id: [
+      commonValidationRules.pattern(/^\+?[0-9\s-()]+$/, 'Please enter a valid WhatsApp number')
+    ],
+    nid_number: [
+      commonValidationRules.pattern(/^[0-9]{10,17}$/, 'NID number must be 10-17 digits'),
+      (value) => {
+        if (value && value.length !== 10 && value.length !== 13 && value.length !== 17) {
+          return 'NID number must be 10, 13, or 17 digits';
+        }
+        return undefined;
+      }
+    ],
+    passport_number: [
+      commonValidationRules.pattern(/^[A-Z0-9]{6,9}$/, 'Passport number must be 6-9 alphanumeric characters'),
+      commonValidationRules.maxLength(9, 'Passport number must be less than 9 characters')
     ],
     driving_license_no: showDriverFields ? [
       commonValidationRules.required('Driving license number is required for drivers')
@@ -224,7 +234,11 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
 
   // Clear client error when user starts typing
   const handleFieldChange = (field: keyof UserForm, value: string | File | null) => {
-    setData(field, value as any);
+    if (field === 'image' || field === 'photo') {
+      setData(field, value as File | null);
+    } else {
+      setData(field, value as string);
+    }
     clearError(field);
   };
 
@@ -250,7 +264,7 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
 
   // Calculate form completion percentage
   const getFormCompletion = () => {
-    const requiredFields = ['name', 'username', 'user_type', 'password', 'password_confirmation'];
+    const requiredFields = ['name', 'username', 'user_type', 'roles', 'password', 'password_confirmation'];
 
     // Add driver-specific required fields
     if (showDriverFields) {
@@ -259,6 +273,9 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
 
     const completedFields = requiredFields.filter(field => {
       const value = data[field as keyof UserForm];
+      if (field === 'roles') {
+        return Array.isArray(value) && value.length > 0;
+      }
       return value && value.toString().trim() !== '';
     });
 
@@ -305,33 +322,27 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
           ]}
         />
 
-        <div className="max-w-6xl">
+        <div className="max-w-4xl xl:max-w-5xl">
           <BaseForm onSubmit={submit} processing={processing}>
-            {/* Basic Information Card */}
-            <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-6">
+            {/* Compact Main Form Card */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Users className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-primary/10 rounded-md">
+                      <Users className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">User Information</CardTitle>
-                      <CardDescription>Basic details and account settings</CardDescription>
+                      <CardTitle className="text-lg">Create User</CardTitle>
+                      <CardDescription className="text-sm">Complete form progress: {formCompletion}%</CardDescription>
                     </div>
                   </div>
-                  {/* Progress Indicator */}
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-sm font-medium flex items-center gap-1">
-                        {formCompletion}%
-                        {formCompletion === 100 && <CheckCircle className="h-3 w-3 text-green-500" />}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Complete</div>
-                    </div>
-                    <div className="w-16 bg-muted rounded-full h-2">
+                  {/* Compact Progress */}
+                  <div className="flex items-center gap-2">
+                    {formCompletion === 100 && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    <div className="w-12 bg-muted rounded-full h-1.5">
                       <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
                           formCompletion === 100 ? 'bg-green-500' : 'bg-primary'
                         }`}
                         style={{ width: `${formCompletion}%` }}
@@ -341,74 +352,91 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-8">
-                {/* Two Column Grid */}
-                <div className="grid gap-8 md:grid-cols-2">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    <FormField
-                      label="Full Name"
-                      name="name"
-                      value={data.name}
-                      onChange={(value) => handleFieldChange('name', value)}
-                      error={getFieldError('name')}
-                      placeholder="Enter full name"
-                      required
-                      autoFocus
-                    />
+              <CardContent className="space-y-5 px-4 sm:px-6">
+                {/* Compact 3-Column Grid */}
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                  {/* Basic Information */}
+                  <FormField
+                    label="Full Name"
+                    name="name"
+                    value={data.name}
+                    onChange={(value) => handleFieldChange('name', value)}
+                    error={getFieldError('name')}
+                    placeholder="Enter full name"
+                    required
+                    autoFocus
+                  />
 
-                    <FormField
-                      label="Username"
-                      name="username"
-                      value={data.username}
-                      onChange={(value) => handleFieldChange('username', value)}
-                      error={getFieldError('username')}
-                      placeholder="Enter username"
-                      required
-                    />
+                  <FormField
+                    label="Username"
+                    name="username"
+                    value={data.username}
+                    onChange={(value) => handleFieldChange('username', value)}
+                    error={getFieldError('username')}
+                    placeholder="Enter username"
+                    required
+                  />
 
-                    <FormField
-                      label="Employee ID"
-                      name="employee_id"
-                      value={data.employee_id}
-                      onChange={(value) => handleFieldChange('employee_id', value)}
-                      error={getFieldError('employee_id')}
-                      placeholder="Enter employee ID"
-                    />
+                  <FormField
+                    label="Employee ID"
+                    name="employee_id"
+                    value={data.employee_id}
+                    onChange={(value) => handleFieldChange('employee_id', value)}
+                    error={getFieldError('employee_id')}
+                    placeholder="Enter employee ID"
+                  />
+                </div>
 
-                    <FormField
-                      label="Email Address"
-                      name="email"
-                      type="email"
-                      value={data.email}
-                      onChange={(value) => handleFieldChange('email', value)}
-                      error={getFieldError('email')}
-                      placeholder="Enter email address"
-                    />
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                  <FormField
+                    label="Email Address"
+                    name="email"
+                    type="email"
+                    value={data.email}
+                    onChange={(value) => handleFieldChange('email', value)}
+                    error={getFieldError('email')}
+                    placeholder="Enter email address"
+                  />
 
-                    <FormSelect
-                      label="User Type"
-                      name="user_type"
-                      value={data.user_type}
-                      onChange={handleUserTypeChange}
-                      error={getFieldError('user_type')}
-                      options={userTypes}
-                      required
-                    />
-                  </div>
+                  <FormSelect
+                    label="User Type"
+                    name="user_type"
+                    value={data.user_type}
+                    onChange={handleUserTypeChange}
+                    error={getFieldError('user_type')}
+                    options={userTypes}
+                    required
+                  />
 
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    <FormSelect
-                      label="Department"
-                      name="department_id"
-                      value={data.department_id}
-                      onChange={(value) => handleFieldChange('department_id', value)}
-                      error={getFieldError('department_id')}
-                      options={departmentOptions}
-                      placeholder="Select department..."
-                    />
+                  <FormSelect
+                    label="Department"
+                    name="department_id"
+                    value={data.department_id}
+                    onChange={(value) => handleFieldChange('department_id', value)}
+                    error={getFieldError('department_id')}
+                    options={departmentOptions}
+                    placeholder="Select department..."
+                  />
 
+                  {/* Role Selection */}
+                  <FormMultiSelect
+                    label="Roles"
+                    name="roles"
+                    value={data.roles}
+                    onChange={(values) => setData('roles', values)}
+                    error={getFieldError('roles')}
+                    options={roles.map(role => ({ value: role.id.toString(), label: role.name }))}
+                    placeholder="Select roles..."
+                    required
+                    searchable
+                    description="Select one or more roles for this user"
+                  />
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                     <FormField
                       label="Official Phone"
                       name="official_phone"
@@ -427,6 +455,45 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                       placeholder="+880 1711 000000"
                     />
 
+                    <FormField
+                      label="WhatsApp ID"
+                      name="whatsapp_id"
+                      value={data.whatsapp_id}
+                      onChange={(value) => handleFieldChange('whatsapp_id', value)}
+                      error={getFieldError('whatsapp_id')}
+                      placeholder="+880 1711 000000"
+                    />
+                  </div>
+                </div>
+
+                {/* Identity Documents */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Identity Documents</h4>
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2">
+                    <FormField
+                      label="National ID Number"
+                      name="nid_number"
+                      value={data.nid_number}
+                      onChange={(value) => handleFieldChange('nid_number', value)}
+                      error={getFieldError('nid_number')}
+                      placeholder="Enter National ID number"
+                    />
+
+                    <FormField
+                      label="Passport Number"
+                      name="passport_number"
+                      value={data.passport_number}
+                      onChange={(value) => handleFieldChange('passport_number', value)}
+                      error={getFieldError('passport_number')}
+                      placeholder="Enter passport number"
+                    />
+                  </div>
+                </div>
+
+                {/* Personal Information */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Personal Information</h4>
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                     <FormSelect
                       label="Blood Group"
                       name="blood_group"
@@ -435,6 +502,14 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                       error={getFieldError('blood_group')}
                       options={bloodGroups}
                       placeholder="Select blood group..."
+                    />
+
+                    <FormDatePicker
+                      label="Joining Date"
+                      name="joining_date"
+                      value={data.joining_date}
+                      onChange={(value) => handleFieldChange('joining_date', value)}
+                      error={getFieldError('joining_date')}
                     />
 
                     <FormSelect
@@ -449,42 +524,100 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                   </div>
                 </div>
 
-                {/* User Type Preview */}
+                {/* Emergency Contact */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Emergency Contact</h4>
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                    <FormField
+                      label="Contact Name"
+                      name="emergency_contact_name"
+                      value={data.emergency_contact_name}
+                      onChange={(value) => handleFieldChange('emergency_contact_name', value)}
+                      error={getFieldError('emergency_contact_name')}
+                      placeholder="Enter emergency contact name"
+                    />
+
+                    <FormField
+                      label="Relation"
+                      name="emergency_contact_relation"
+                      value={data.emergency_contact_relation}
+                      onChange={(value) => handleFieldChange('emergency_contact_relation', value)}
+                      error={getFieldError('emergency_contact_relation')}
+                      placeholder="e.g., Spouse, Parent"
+                    />
+
+                    <FormField
+                      label="Phone Number"
+                      name="emergency_phone"
+                      value={data.emergency_phone}
+                      onChange={(value) => handleFieldChange('emergency_phone', value)}
+                      error={getFieldError('emergency_phone')}
+                      placeholder="+880 1711 000000"
+                    />
+                  </div>
+                </div>
+
+                {/* Addresses - Compact Layout */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Address Information</h4>
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                    <FormTextarea
+                      label="Present Address"
+                      name="present_address"
+                      value={data.present_address}
+                      onChange={(value) => handleFieldChange('present_address', value)}
+                      error={getFieldError('present_address')}
+                      placeholder="Enter current address"
+                      rows={2}
+                    />
+
+                    <FormTextarea
+                      label="Permanent Address"
+                      name="permanent_address"
+                      value={data.permanent_address}
+                      onChange={(value) => handleFieldChange('permanent_address', value)}
+                      error={getFieldError('permanent_address')}
+                      placeholder="Enter permanent address"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                {/* User Type Preview - Compact */}
                 {data.user_type && (
-                  <div className="p-4 rounded-lg bg-muted/50 border">
-                    <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-md bg-muted/30 border-l-2 border-primary">
+                    <div className="flex items-center gap-2 text-sm">
                       {enhancedUserTypeOptions.find(opt => opt.value === data.user_type)?.icon}
-                      <div>
-                        <div className="font-medium text-sm">
-                          {enhancedUserTypeOptions.find(opt => opt.value === data.user_type)?.label}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {enhancedUserTypeOptions.find(opt => opt.value === data.user_type)?.description}
-                        </div>
-                      </div>
+                      <span className="font-medium">
+                        {enhancedUserTypeOptions.find(opt => opt.value === data.user_type)?.label}
+                      </span>
+                      <span className="text-muted-foreground">-</span>
+                      <span className="text-muted-foreground text-xs">
+                        {enhancedUserTypeOptions.find(opt => opt.value === data.user_type)?.description}
+                      </span>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Driver Information Card (conditional) */}
+            {/* Driver Information Card (conditional) - Compact */}
             {showDriverFields && (
-              <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Car className="h-5 w-5 text-green-600" />
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3 px-4 sm:px-6">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-green-100 rounded-md">
+                      <Car className="h-4 w-4 text-green-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Driver Information</CardTitle>
-                      <CardDescription>License details and driver-specific information</CardDescription>
+                      <CardTitle className="text-lg">Driver Information</CardTitle>
+                      <CardDescription className="text-sm">License details and driver-specific information</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-6">
-                  <div className="grid gap-6 md:grid-cols-2">
+                <CardContent className="space-y-4 px-4 sm:px-6">
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
                     <FormField
                       label="Driving License Number"
                       name="driving_license_no"
@@ -505,7 +638,9 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                       placeholder="Select license class..."
                       required={showDriverFields}
                     />
+                  </div>
 
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                     <FormDatePicker
                       label="License Issue Date"
                       name="license_issue_date"
@@ -522,93 +657,30 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                       error={getFieldError('license_expiry_date')}
                       required={showDriverFields}
                     />
-                  </div>
 
-                  <FormSelect
-                    label="Driver Status"
-                    name="driver_status"
-                    value={data.driver_status}
-                    onChange={(value) => handleFieldChange('driver_status', value)}
-                    error={getFieldError('driver_status')}
-                    options={driverStatusOptions}
-                  />
+                    <FormSelect
+                      label="Driver Status"
+                      name="driver_status"
+                      value={data.driver_status}
+                      onChange={(value) => handleFieldChange('driver_status', value)}
+                      error={getFieldError('driver_status')}
+                      options={driverStatusOptions}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Additional Information Card */}
-            <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
-              <CardHeader>
-                <CardTitle className="text-xl">Additional Information</CardTitle>
-                <CardDescription>Emergency contacts, addresses, and security settings</CardDescription>
+            {/* File Uploads & Security - Compact */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3 px-4 sm:px-6">
+                <CardTitle className="text-lg">Files & Security</CardTitle>
+                <CardDescription className="text-sm">Upload images and set account password</CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    <FormField
-                      label="Emergency Contact Name"
-                      name="emergency_contact_name"
-                      value={data.emergency_contact_name}
-                      onChange={(value) => handleFieldChange('emergency_contact_name', value)}
-                      error={getFieldError('emergency_contact_name')}
-                      placeholder="Enter emergency contact name"
-                    />
-
-                    <FormField
-                      label="Emergency Contact Relation"
-                      name="emergency_contact_relation"
-                      value={data.emergency_contact_relation}
-                      onChange={(value) => handleFieldChange('emergency_contact_relation', value)}
-                      error={getFieldError('emergency_contact_relation')}
-                      placeholder="e.g., Spouse, Parent, Sibling"
-                    />
-
-                    <FormField
-                      label="Emergency Phone"
-                      name="emergency_phone"
-                      value={data.emergency_phone}
-                      onChange={(value) => handleFieldChange('emergency_phone', value)}
-                      error={getFieldError('emergency_phone')}
-                      placeholder="+880 1711 000000"
-                    />
-
-                    <FormDatePicker
-                      label="Joining Date"
-                      name="joining_date"
-                      value={data.joining_date}
-                      onChange={(value) => handleFieldChange('joining_date', value)}
-                      error={getFieldError('joining_date')}
-                    />
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    <FormTextarea
-                      label="Present Address"
-                      name="present_address"
-                      value={data.present_address}
-                      onChange={(value) => handleFieldChange('present_address', value)}
-                      error={getFieldError('present_address')}
-                      placeholder="Enter current address"
-                      rows={3}
-                    />
-
-                    <FormTextarea
-                      label="Permanent Address"
-                      name="permanent_address"
-                      value={data.permanent_address}
-                      onChange={(value) => handleFieldChange('permanent_address', value)}
-                      error={getFieldError('permanent_address')}
-                      placeholder="Enter permanent address"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                {/* File Uploads */}
-                <div className="grid gap-6 md:grid-cols-2">
+              <CardContent className="space-y-4 px-4 sm:px-6">
+                {/* File Uploads - Compact */}
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
                   <FormFileUpload
                     label="Profile Image"
                     name="image"
@@ -628,10 +700,9 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
                   />
                 </div>
 
-                {/* Password Section */}
-                <div className="border-t pt-6">
-                  <h4 className="font-medium text-sm mb-4">Account Security</h4>
-                  <div className="grid gap-6 md:grid-cols-2">
+                {/* Password Section - Compact */}
+                <div className="border-t pt-4">
+                  <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
                     <FormField
                       label="Password"
                       name="password"
@@ -658,11 +729,12 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
               </CardContent>
             </Card>
 
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-6 border-t">
+            {/* Compact Form Actions */}
+            <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => reset()}
                 disabled={processing}
               >
@@ -671,6 +743,7 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => window.history.back()}
                 disabled={processing}
               >
@@ -678,6 +751,7 @@ export default function CreateUser({ departments, userTypes, licenseClasses, blo
               </Button>
               <Button
                 type="submit"
+                size="sm"
                 disabled={formCompletion < 100 || processing}
               >
                 <Plus className="h-4 w-4" />

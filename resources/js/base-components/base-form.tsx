@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import InputError from "@/components/input-error"
-import { LoaderCircle } from "lucide-react"
+import { Upload, X, Calendar, ChevronDown, Check } from "lucide-react"
 
 /**
  * Reusable Form Components for Laravel + Inertia.js applications
@@ -61,7 +61,7 @@ import { LoaderCircle } from "lucide-react"
  */
 
 // Validation function type
-export type ValidationRule = (value: any) => string | undefined
+export type ValidationRule = (value: unknown) => string | undefined
 
 // Common validation rules
 export const validationRules = {
@@ -72,27 +72,27 @@ export const validationRules = {
     (value) => {
       if (!value) return undefined
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return !emailRegex.test(value) ? message : undefined
+      return !emailRegex.test(String(value)) ? message : undefined
     },
 
   minLength: (min: number, message?: string): ValidationRule =>
     (value) => {
       if (!value) return undefined
       const msg = message || `Must be at least ${min} characters`
-      return value.toString().length < min ? msg : undefined
+      return String(value).length < min ? msg : undefined
     },
 
   maxLength: (max: number, message?: string): ValidationRule =>
     (value) => {
       if (!value) return undefined
       const msg = message || `Must be no more than ${max} characters`
-      return value.toString().length > max ? msg : undefined
+      return String(value).length > max ? msg : undefined
     },
 
   pattern: (regex: RegExp, message = "Invalid format"): ValidationRule =>
     (value) => {
       if (!value) return undefined
-      return !regex.test(value) ? message : undefined
+      return !regex.test(String(value)) ? message : undefined
     }
 }
 
@@ -110,7 +110,7 @@ export function BaseForm({
   onSubmit,
   ...props
 }: BaseFormProps) {
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!processing && onSubmit) {
       onSubmit(e)
@@ -288,6 +288,171 @@ export function FormSelect({
   )
 }
 
+// Form Multi-Select Component
+interface FormMultiSelectProps {
+  label: string
+  name: string
+  value: string[]
+  onChange: (values: string[]) => void
+  error?: string
+  options: Array<{ value: string | number; label: string }>
+  placeholder?: string
+  required?: boolean
+  disabled?: boolean
+  description?: string
+  className?: string
+  searchable?: boolean
+}
+
+export function FormMultiSelect({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  options,
+  placeholder = "Select options...",
+  required = false,
+  disabled = false,
+  description,
+  className,
+  searchable = true
+}: FormMultiSelectProps) {
+  const [isOpen, setIsOpen] = React.useState(false)
+  const [searchTerm, setSearchTerm] = React.useState("")
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  // Filter options based on search term
+  const filteredOptions = searchable
+    ? options.filter(option =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : options
+
+  // Handle click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        setSearchTerm("")
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const toggleOption = (optionValue: string) => {
+    const newValue = value.includes(optionValue)
+      ? value.filter(v => v !== optionValue)
+      : [...value, optionValue]
+    onChange(newValue)
+  }
+
+  const getDisplayText = () => {
+    if (value.length === 0) return placeholder
+    if (value.length === 1) {
+      const selected = options.find(opt => opt.value.toString() === value[0])
+      return selected?.label || placeholder
+    }
+    if (value.length <= 3) {
+      const selectedLabels = value.map(val => {
+        const option = options.find(opt => opt.value.toString() === val)
+        return option?.label
+      }).filter(Boolean)
+      return selectedLabels.join(', ')
+    }
+    return `${value.length} roles selected`
+  }
+
+  return (
+    <div className={cn("space-y-2", className)} ref={dropdownRef}>
+      <Label htmlFor={name} className={cn(error && "text-destructive")}>
+        {label}
+        {required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+
+      <div className="relative">
+        <button
+          type="button"
+          id={name}
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={cn(
+            "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+            "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            error && "border-destructive focus:ring-destructive",
+            isOpen && "ring-2 ring-ring ring-offset-2"
+          )}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-invalid={!!error}
+          aria-describedby={description ? `${name}-description` : undefined}
+        >
+          <span className={cn(value.length === 0 && "text-muted-foreground")}>
+            {getDisplayText()}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg">
+            {searchable && (
+              <div className="p-2 border-b">
+                <Input
+                  type="text"
+                  placeholder="Search options..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8"
+                />
+              </div>
+            )}
+
+            <div className="max-h-60 overflow-auto">
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  No options found
+                </div>
+              ) : (
+                filteredOptions.map((option) => (
+                  <div
+                    key={option.value}
+                    onClick={() => toggleOption(option.value.toString())}
+                    className={cn(
+                      "flex items-center space-x-2 px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                      value.includes(option.value.toString()) && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border border-primary",
+                      value.includes(option.value.toString()) && "bg-primary text-primary-foreground"
+                    )}>
+                      {value.includes(option.value.toString()) && (
+                        <Check className="h-3 w-3" />
+                      )}
+                    </div>
+                    <span>{option.label}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {description && (
+        <p id={`${name}-description`} className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      )}
+
+      <InputError message={error} />
+    </div>
+  )
+}
+
 // Form Checkbox Component
 interface FormCheckboxProps {
   label: string
@@ -322,7 +487,7 @@ export function FormCheckbox({
           aria-invalid={!!error}
           aria-describedby={description ? `${name}-description` : undefined}
         />
-        <Label htmlFor={name} error={!!error} className="text-sm font-normal">
+        <Label htmlFor={name} className="text-sm font-normal">
           {label}
         </Label>
       </div>
@@ -341,14 +506,12 @@ export function FormCheckbox({
 // Form Actions Container
 interface FormActionsProps {
   children: React.ReactNode
-  processing?: boolean
   className?: string
   align?: "left" | "right" | "center"
 }
 
 export function FormActions({
   children,
-  processing = false,
   className,
   align = "left"
 }: FormActionsProps) {
@@ -360,20 +523,7 @@ export function FormActions({
       align === "left" && "justify-start",
       className
     )}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type === Button) {
-          return React.cloneElement(child, {
-            disabled: child.props.disabled || processing,
-            children: processing && child.props.type === "submit" ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                {child.props.children}
-              </>
-            ) : child.props.children
-          })
-        }
-        return child
-      })}
+      {children}
     </div>
   )
 }
@@ -414,7 +564,7 @@ export function FormTextarea({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={name} error={!!error}>
+      <Label htmlFor={name}>
         {label}
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
@@ -484,6 +634,247 @@ export function FormSection({
       <div className="space-y-4">
         {children}
       </div>
+    </div>
+  )
+}
+
+// Form Date Picker Component
+interface FormDatePickerProps {
+  label: string
+  name: string
+  value: string
+  onChange: (value: string) => void
+  error?: string
+  placeholder?: string
+  required?: boolean
+  disabled?: boolean
+  description?: string
+  min?: string
+  max?: string
+  className?: string
+}
+
+export function FormDatePicker({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  placeholder,
+  required = false,
+  disabled = false,
+  description,
+  min,
+  max,
+  className
+}: FormDatePickerProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value)
+  }
+
+  return (
+    <div className={cn("space-y-2", className)}>
+      <Label htmlFor={name} className={cn(error && "text-destructive")}>
+        {label}
+        {required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+
+      <div className="relative">
+        <Input
+          id={name}
+          name={name}
+          type="date"
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          min={min}
+          max={max}
+          aria-invalid={!!error}
+          aria-describedby={description ? `${name}-description` : undefined}
+          className={cn(
+            "pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer", // Hide native calendar icon but keep functionality
+            error && "border-destructive focus-visible:ring-destructive"
+          )}
+        />
+        <Calendar
+          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+      </div>
+
+      {description && (
+        <p id={`${name}-description`} className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      )}
+
+      <InputError message={error} />
+    </div>
+  )
+}
+
+// Form File Upload Component
+interface FormFileUploadProps {
+  label: string
+  name: string
+  value?: File | null
+  onChange: (file: File | null) => void
+  error?: string
+  accept?: string
+  required?: boolean
+  disabled?: boolean
+  description?: string
+  maxSize?: number // in bytes
+  className?: string
+}
+
+export function FormFileUpload({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  accept,
+  required = false,
+  disabled = false,
+  description,
+  maxSize,
+  className
+}: FormFileUploadProps) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [dragActive, setDragActive] = React.useState(false)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    if (file && maxSize && file.size > maxSize) {
+      // You might want to handle this differently based on your error handling strategy
+      return
+    }
+    onChange(file)
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (disabled) return
+
+    const files = Array.from(e.dataTransfer.files)
+    const file = files[0] || null
+    if (file && maxSize && file.size > maxSize) {
+      return
+    }
+    onChange(file)
+  }
+
+  const removeFile = () => {
+    onChange(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  return (
+    <div className={cn("space-y-2", className)}>
+      <Label htmlFor={name} className={cn(error && "text-destructive")}>
+        {label}
+        {required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+
+      <div
+        className={cn(
+          "relative border-2 border-dashed rounded-lg p-6 transition-colors",
+          dragActive ? "border-primary bg-primary/5" : "border-border",
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/50",
+          error && "border-destructive"
+        )}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        onClick={() => !disabled && fileInputRef.current?.click()}
+      >
+        <input
+          ref={fileInputRef}
+          id={name}
+          name={name}
+          type="file"
+          accept={accept}
+          onChange={handleFileChange}
+          required={required}
+          disabled={disabled}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          aria-describedby={description ? `${name}-description` : undefined}
+        />
+
+        {value ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="text-sm">
+                <p className="font-medium">{value.name}</p>
+                <p className="text-muted-foreground">{formatFileSize(value.size)}</p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                removeFile()
+              }}
+              disabled={disabled}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center">
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+            <div className="mt-2">
+              <p className="text-sm font-medium">Click to upload or drag and drop</p>
+              {accept && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Accepted formats: {accept}
+                </p>
+              )}
+              {maxSize && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max size: {formatFileSize(maxSize)}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {description && (
+        <p id={`${name}-description`} className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      )}
+
+      <InputError message={error} />
     </div>
   )
 }

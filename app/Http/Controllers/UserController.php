@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Department;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\UserIndexRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,30 +20,68 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index(Request $request): Response
+    public function index(UserIndexRequest $request): Response
     {
-        $query = User::with(['department'])
-            ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%")
-                      ->orWhere('employee_id', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-            })
-            ->when($request->user_type, function ($query, $userType) {
-                $query->where('user_type', $userType);
-            })
-            ->when($request->department_id, function ($query, $departmentId) {
-                $query->where('department_id', $departmentId);
-            })
-            ->when($request->status, function ($query, $status) {
-                $query->where('status', $status);
-            })
-            ->when($request->driver_status, function ($query, $driverStatus) {
-                $query->where('driver_status', $driverStatus);
-            });
+        $validated = $request->validated();
 
-        $users = $query->orderBy($request->sort_by ?? 'created_at', $request->sort_order ?? 'desc')
-                      ->paginate($request->per_page ?? 15)
+        $query = User::with(['department', 'roles']);
+
+        // Apply search
+        if (!empty($validated['search'])) {
+            $search = $validated['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhereHas('department', function ($subQ) use ($search) {
+                      $subQ->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Apply filters
+        if (!empty($validated['filters'])) {
+            $filters = $validated['filters'];
+
+            if (!empty($filters['user_type'])) {
+                $query->whereIn('user_type', $filters['user_type']);
+            }
+
+            if (!empty($filters['status'])) {
+                $query->whereIn('status', $filters['status']);
+            }
+
+            if (!empty($filters['department_id'])) {
+                $query->whereIn('department_id', $filters['department_id']);
+            }
+
+            if (!empty($filters['blood_group'])) {
+                $query->whereIn('blood_group', $filters['blood_group']);
+            }
+
+            if (!empty($filters['roles'])) {
+                $query->whereHas('roles', function ($q) use ($filters) {
+                    $q->whereIn('name', $filters['roles']);
+                });
+            }
+        }
+
+        // Apply sorting
+        $sortColumn = $validated['sort'];
+        $sortDirection = $validated['direction'];
+
+        // Special handling for department sorting
+        if ($sortColumn === 'department') {
+            $query->leftJoin('departments', 'users.department_id', '=', 'departments.id')
+                  ->orderBy('departments.name', $sortDirection)
+                  ->select('users.*');
+        } else {
+            $query->orderBy($sortColumn, $sortDirection);
+        }
+
+        // Get pagination data
+        $users = $query->paginate($validated['per_page'])
                       ->withQueryString()
                       ->through(fn ($user) => [
                           'id' => $user->id,
@@ -54,6 +93,10 @@ class UserController extends Controller
                           'status' => $user->status,
                           'driver_status' => $user->driver_status,
                           'department' => $user->department,
+                          'blood_group' => $user->blood_group,
+                          'phone' => $user->personal_phone ?? $user->official_phone,
+                          'roles' => $user->roles,
+                          'is_driver' => in_array($user->user_type, ['driver', 'transport_manager']),
                           'created_at' => $user->created_at,
                           'image' => $user->image,
                           'photo' => $user->photo,
@@ -64,44 +107,32 @@ class UserController extends Controller
                           'average_rating' => $user->average_rating,
                       ]);
 
-        // Debug: Log the pagination structure
-        \Log::info('Users pagination structure:', [
-            'has_meta' => isset($users->toArray()['meta']),
-            'keys' => array_keys($users->toArray()),
-            'meta_keys' => isset($users->toArray()['meta']) ? array_keys($users->toArray()['meta']) : 'no meta'
-        ]);
-
+        // Get filter options
         $departments = Department::active()->get(['id', 'name']);
+        $userTypes = User::distinct()->pluck('user_type')->filter()->values()->toArray();
+        $statuses = User::distinct()->pluck('status')->filter()->values()->toArray();
+        $bloodGroups = User::distinct()->pluck('blood_group')->filter()->values()->toArray();
+        $roles = \Spatie\Permission\Models\Role::pluck('name')->toArray();
 
-        $userTypes = [
-            ['value' => 'employee', 'label' => 'Employee'],
-            ['value' => 'driver', 'label' => 'Driver'],
-            ['value' => 'transport_manager', 'label' => 'Transport Manager'],
-            ['value' => 'admin', 'label' => 'Administrator'],
-        ];
-
-        $statusOptions = [
-            ['value' => 'active', 'label' => 'Active'],
-            ['value' => 'inactive', 'label' => 'Inactive'],
-            ['value' => 'suspended', 'label' => 'Suspended'],
-        ];
-
-        $driverStatusOptions = [
-            ['value' => 'available', 'label' => 'Available'],
-            ['value' => 'on_trip', 'label' => 'On Trip'],
-            ['value' => 'on_leave', 'label' => 'On Leave'],
-            ['value' => 'inactive', 'label' => 'Inactive'],
-            ['value' => 'suspended', 'label' => 'Suspended'],
+        // Calculate stats
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('status', 'active')->count(),
+            'drivers' => User::whereIn('user_type', ['driver', 'transport_manager'])->count(),
+            'inactive' => User::where('status', 'inactive')->count(),
         ];
 
         return Inertia::render('users/index', [
             'users' => $users,
-            'departments' => $departments,
-            'userTypes' => $userTypes,
-            'statusOptions' => $statusOptions,
-            'driverStatusOptions' => $driverStatusOptions,
-            'filters' => $request->only(['search', 'user_type', 'department_id', 'status', 'driver_status']),
-            'sort' => $request->only(['sort_by', 'sort_order']),
+            'filterOptions' => [
+                'user_types' => $userTypes,
+                'statuses' => $statuses,
+                'departments' => $departments,
+                'blood_groups' => $bloodGroups,
+                'roles' => $roles,
+            ],
+            'stats' => $stats,
+            'queryParams' => $request->only(['search', 'sort', 'direction', 'filters', 'per_page']),
         ]);
     }
 
@@ -116,8 +147,6 @@ class UserController extends Controller
         $userTypes = [
             ['value' => 'employee', 'label' => 'Employee'],
             ['value' => 'driver', 'label' => 'Driver'],
-            ['value' => 'transport_manager', 'label' => 'Transport Manager'],
-            ['value' => 'admin', 'label' => 'Administrator'],
         ];
 
         $licenseClasses = [
@@ -168,8 +197,15 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
-        // Assign role based on user_type
-        $this->assignRoleByUserType($user, $validated['user_type']);
+        // Handle role assignments - roles are now required
+        if (isset($validated['roles']) && is_array($validated['roles']) && !empty($validated['roles'])) {
+            // Convert role IDs to role names/objects and assign
+            $roles = Role::whereIn('id', $validated['roles'])->get();
+            $user->assignRole($roles);
+        } else {
+            // This shouldn't happen due to validation, but fallback to automatic role assignment
+            $this->assignRoleByUserType($user, $validated['user_type']);
+        }
 
         return redirect()->route('users.index')
                         ->with('success', 'User created successfully.');
@@ -209,13 +245,13 @@ class UserController extends Controller
     {
         $departments = Department::active()->get(['id', 'name']);
         $roles = Role::all(['id', 'name']);
-        $userRoles = $user->roles->pluck('name')->toArray();
+        $userRoles = $user->roles->pluck('id')->map(function($id) {
+            return (string) $id;
+        })->toArray();
 
         $userTypes = [
             ['value' => 'employee', 'label' => 'Employee'],
             ['value' => 'driver', 'label' => 'Driver'],
-            ['value' => 'transport_manager', 'label' => 'Transport Manager'],
-            ['value' => 'admin', 'label' => 'Administrator'],
         ];
 
         $licenseClasses = [
@@ -294,8 +330,13 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        // Update role if user_type changed
-        if (isset($validated['user_type']) && $user->wasChanged('user_type')) {
+        // Handle role assignments - roles are now required
+        if (isset($validated['roles']) && is_array($validated['roles']) && !empty($validated['roles'])) {
+            // Convert role IDs to role objects and assign
+            $roles = Role::whereIn('id', $validated['roles'])->get();
+            $user->syncRoles($roles);
+        } else {
+            // This shouldn't happen due to validation, but fallback to automatic role assignment
             $user->syncRoles([]); // Remove all roles
             $this->assignRoleByUserType($user, $validated['user_type']);
         }

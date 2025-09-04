@@ -41,6 +41,7 @@ export interface User {
     id: number;
     name: string;
     username?: string;
+    employee_id?: string;
     email?: string; // Made optional for drivers
     phone?: string; // Keep for backward compatibility
     official_phone?: string;
@@ -55,12 +56,25 @@ export interface User {
     whatsapp_id?: string;
     // Driver-specific fields
     driving_license_no?: string;
+    license_class?: string;
+    license_issue_date?: string;
+    license_expiry_date?: string;
     nid_number?: string;
+    passport_number?: string;
     present_address?: string;
     permanent_address?: string;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
     emergency_contact_relation?: string;
+    // System fields
+    joining_date?: string;
+    probation_end_date?: string;
+    department_id?: number;
+    driver_status?: string;
+    total_distance_covered?: number;
+    total_trips_completed?: number;
+    average_rating?: number;
+    // Authentication and tracking
     last_login_at?: string;
     last_login_ip?: string;
     last_login_location?: string;
@@ -70,7 +84,6 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
-    department_id?: number;
     [key: string]: unknown; // This allows for additional properties...
 }
 

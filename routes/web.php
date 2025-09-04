@@ -10,7 +10,7 @@ use App\Http\Controllers\DriversController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Foundation\Application;
 
 /*

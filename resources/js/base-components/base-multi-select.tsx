@@ -106,7 +106,7 @@ export function MultiSelect({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-full p-0" align="start">
-        <div className="p-2">
+        <div className="p-2 border-b">
           <Input
             placeholder={searchPlaceholder}
             value={searchTerm}
@@ -114,40 +114,75 @@ export function MultiSelect({
             className="h-8"
           />
         </div>
-        <div className="max-h-60 overflow-auto">
+        <div className="max-h-64 overflow-auto">
           {filteredOptions.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              No options found.
+              {searchTerm ? 'No matching options found.' : 'No options available.'}
             </div>
           ) : (
-            filteredOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onSelect={() => handleSelect(option.value)}
-                className="cursor-pointer"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="flex h-4 w-4 items-center justify-center">
-                    {value.includes(option.value) && (
-                      <Check className="h-3 w-3" />
-                    )}
+            <>
+              {/* Selected items first */}
+              {value.length > 0 && !searchTerm && (
+                <>
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
+                    Selected ({value.length})
                   </div>
-                  <span>{option.label}</span>
-                </div>
-              </DropdownMenuItem>
-            ))
+                  {filteredOptions
+                    .filter(option => value.includes(option.value))
+                    .map((option) => (
+                      <DropdownMenuItem
+                        key={`selected-${option.value}`}
+                        onSelect={() => handleSelect(option.value)}
+                        className="cursor-pointer bg-muted/30"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div className="flex h-4 w-4 items-center justify-center">
+                            <Check className="h-3 w-3 text-primary" />
+                          </div>
+                          <span className="font-medium">{option.label}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
+                    Available
+                  </div>
+                </>
+              )}
+              {/* Available options */}
+              {filteredOptions
+                .filter(option => !value.includes(option.value))
+                .map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onSelect={() => handleSelect(option.value)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="flex h-4 w-4 items-center justify-center">
+                        {/* Empty space for alignment */}
+                      </div>
+                      <span>{option.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+            </>
           )}
         </div>
         {value.length > 0 && (
           <div className="border-t p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="h-6 w-full text-xs"
-            >
-              Clear all
-            </Button>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {value.length} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClear}
+                className="h-6 text-xs"
+              >
+                Clear all
+              </Button>
+            </div>
           </div>
         )}
       </DropdownMenuContent>

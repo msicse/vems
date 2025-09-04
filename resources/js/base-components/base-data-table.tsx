@@ -246,30 +246,56 @@ export function ServerSideDataTable<T>({
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 p-4">
-                  <div className="space-y-4">
-                    {filters.map((filter) => (
-                      <div key={filter.key} className="space-y-2">
-                        <label className="text-sm font-medium">{filter.label}</label>
-                        <MultiSelect
-                          options={getFilterOptionsForColumn(filter)}
-                          value={getFilterValues(filter.key)}
-                          onChange={(values) => handleFilter(filter.key, values)}
-                          placeholder={`Select ${filter.label.toLowerCase()}...`}
-                        />
-                      </div>
-                    ))}
-                    {hasActiveFilters && (
+                <DropdownMenuContent
+                  align="end"
+                  className="w-80 sm:w-96 max-h-[80vh] overflow-hidden p-0"
+                  sideOffset={5}
+                >
+                  <div className="p-4 border-b bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm">Filter Options</h3>
+                      {hasActiveFilters && (
+                        <Badge variant="secondary" className="text-xs">
+                          {Object.keys(currentParams.filters || {}).length} active
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                      {filters.map((filter) => (
+                        <div key={filter.key} className="space-y-2">
+                          <label className="text-sm font-medium flex items-center justify-between">
+                            {filter.label}
+                            {getFilterValues(filter.key).length > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {getFilterValues(filter.key).length} selected
+                              </Badge>
+                            )}
+                          </label>
+                          <MultiSelect
+                            options={getFilterOptionsForColumn(filter)}
+                            value={getFilterValues(filter.key)}
+                            onChange={(values) => handleFilter(filter.key, values)}
+                            placeholder={`Select ${filter.label.toLowerCase()}...`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {hasActiveFilters && (
+                    <div className="p-4 border-t bg-muted/30">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={clearFilters}
                         className="w-full"
                       >
+                        <X className="mr-2 h-4 w-4" />
                         Clear all filters
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -287,27 +313,42 @@ export function ServerSideDataTable<T>({
 
       {/* Active filters display */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(currentParams.filters || {}).map(([key, values]) => {
-            if (!Array.isArray(values) || values.length === 0) return null
+        <div className="bg-muted/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Active Filters:</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-6 text-xs"
+            >
+              Clear all
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(currentParams.filters || {}).map(([key, values]) => {
+              if (!Array.isArray(values) || values.length === 0) return null
 
-            const filter = filters.find(f => f.key === key)
-            const label = filter?.label || key
+              const filter = filters.find(f => f.key === key)
+              const label = filter?.label || key
 
-            return (
-              <Badge key={key} variant="secondary" className="gap-1">
-                {label}: {values.length} selected
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleFilter(key, [])}
-                  className="h-3 w-3 p-0 hover:bg-transparent"
-                >
-                  <X className="h-2 w-2" />
-                </Button>
-              </Badge>
-            )
-          })}
+              return (
+                <Badge key={key} variant="secondary" className="gap-1 max-w-xs">
+                  <span className="truncate">
+                    {label}: {values.length === 1 ? values[0] : `${values.length} selected`}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleFilter(key, [])}
+                    className="h-3 w-3 p-0 hover:bg-transparent"
+                  >
+                    <X className="h-2 w-2" />
+                  </Button>
+                </Badge>
+              )
+            })}
+          </div>
         </div>
       )}
 

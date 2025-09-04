@@ -23,16 +23,20 @@ class UserIndexRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'sort' => ['nullable', 'string', 'in:id,name,email,phone,user_type,status,created_at'],
+            'sort' => ['nullable', 'string', 'in:id,name,email,username,user_type,status,department,blood_group,created_at'],
             'direction' => ['nullable', 'string', 'in:asc,desc'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
             'filters' => ['nullable', 'array'],
             'filters.user_type' => ['nullable', 'array'],
-            'filters.user_type.*' => ['string'],
+            'filters.user_type.*' => ['string', 'in:employee,driver,transport_manager,admin'],
             'filters.status' => ['nullable', 'array'],
-            'filters.status.*' => ['string'],
+            'filters.status.*' => ['string', 'in:active,inactive,suspended'],
+            'filters.department_id' => ['nullable', 'array'],
+            'filters.department_id.*' => ['string'],
             'filters.blood_group' => ['nullable', 'array'],
             'filters.blood_group.*' => ['string'],
+            'filters.roles' => ['nullable', 'array'],
+            'filters.roles.*' => ['string'],
             'format' => ['nullable', 'string', 'in:csv,xlsx,pdf'],
             'template_id' => ['nullable', 'integer', 'exists:export_templates,id'],
         ];

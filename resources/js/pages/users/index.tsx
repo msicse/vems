@@ -11,9 +11,15 @@ interface User {
     id: number;
     name: string;
     email: string;
+    username: string;
+    user_type: string;
+    department: { name: string } | null;
+    status: string;
     roles: Array<{ name: string }>;
     is_driver: boolean;
     driver_status: string | null;
+    blood_group: string | null;
+    phone: string | null;
     created_at: string;
 }
 
@@ -29,21 +35,24 @@ interface PaginatedUsers {
 
 interface UsersPageProps {
     users: PaginatedUsers;
-    filterOptions?: {
-        roles?: string[];
-        statuses?: Array<{ label: string; value: string }>;
+    filterOptions: {
+        user_types: string[];
+        statuses: string[];
+        roles: string[];
+        departments: Array<{ id: number; name: string }>;
+        blood_groups: string[];
     };
-    stats?: {
+    stats: {
         total: number;
         active: number;
         drivers: number;
         inactive: number;
     };
-    queryParams?: {
+    queryParams: {
         search?: string;
         sort?: string;
         direction?: 'asc' | 'desc';
-        filters?: Record<string, string | number>;
+        filters?: Record<string, string | string[]>;
         per_page?: number;
     };
 }
@@ -55,31 +64,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function UsersIndex({
     users,
-    filterOptions = {},
-    stats = { total: 0, active: 0, drivers: 0, inactive: 0 },
-    queryParams = {}
+    filterOptions,
+    stats,
+    queryParams
 }: UsersPageProps) {
-    // Debug logging
-    console.log('UsersIndex - queryParams:', queryParams);
-    console.log('UsersIndex - users data:', users);
-
-    // Test manual sorting
-    const handleSort = (field: string) => {
-        const currentDirection = queryParams?.direction || 'asc';
-        const newDirection = queryParams?.sort === field && currentDirection === 'asc' ? 'desc' : 'asc';
-
-        console.log('Manual sort clicked:', { field, newDirection });
-
-        router.get(route('users.index'), {
-            ...queryParams,
-            sort: field,
-            direction: newDirection,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
     const handleRowClick = (user: User) => {
         router.visit(route('users.show', user.id));
     };
@@ -109,20 +97,76 @@ export default function UsersIndex({
                             <Mail className="h-3 w-3" />
                             {user.email}
                         </div>
+                        <div className="text-xs text-gray-400">
+                            @{user.username}
+                        </div>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'email',
-            label: 'Email',
+            key: 'user_type',
+            label: 'Type',
             sortable: true,
-            className: 'hidden md:table-cell',
+            filterable: true,
+            render: (value) => {
+                const variants = {
+                    admin: 'destructive',
+                    transport_manager: 'default',
+                    driver: 'secondary',
+                    employee: 'outline',
+                } as const;
+
+                const icons = {
+                    admin: <Shield className="h-3 w-3" />,
+                    transport_manager: <Shield className="h-3 w-3" />,
+                    driver: <User className="h-3 w-3" />,
+                    employee: <User className="h-3 w-3" />,
+                };
+
+                return (
+                    <Badge variant={variants[value as keyof typeof variants]} className="gap-1">
+                        {icons[value as keyof typeof icons]}
+                        {value?.replace('_', ' ')}
+                    </Badge>
+                );
+            },
+        },
+        {
+            key: 'department',
+            label: 'Department',
+            sortable: true,
+            filterable: true,
+            render: (value) => (
+                <span className="text-sm">
+                    {value?.name || 'No Department'}
+                </span>
+            ),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            sortable: true,
+            filterable: true,
+            render: (value) => {
+                const variants = {
+                    active: 'default',
+                    inactive: 'secondary',
+                    suspended: 'destructive',
+                } as const;
+
+                return (
+                    <Badge variant={variants[value as keyof typeof variants]}>
+                        {value}
+                    </Badge>
+                );
+            },
         },
         {
             key: 'roles',
             label: 'Roles',
             sortable: false,
+            filterable: true,
             render: (value) => (
                 <div className="flex flex-wrap gap-1">
                     {value?.map((role: { name: string }) => (
@@ -135,23 +179,15 @@ export default function UsersIndex({
             ),
         },
         {
-            key: 'is_driver',
-            label: 'Driver',
+            key: 'blood_group',
+            label: 'Blood Group',
             sortable: true,
-            render: (value, user) => {
-                if (!value) {
-                    return <Badge variant="secondary" className="text-xs">No</Badge>;
-                }
-
-                return (
-                    <Badge
-                        variant={user.driver_status === 'active' ? 'default' : 'secondary'}
-                        className="text-xs"
-                    >
-                        Yes
-                    </Badge>
-                );
-            },
+            filterable: true,
+            render: (value) => (
+                <span className="font-mono text-sm bg-red-50 text-red-700 px-2 py-1 rounded">
+                    {value || 'N/A'}
+                </span>
+            ),
         },
         {
             key: 'created_at',
@@ -213,8 +249,54 @@ export default function UsersIndex({
         },
     ];
 
-    // Define filters - simplified for better compatibility
-    const filters: ColumnFilter[] = [];
+    // Define filters
+    const filters: ColumnFilter[] = [
+        {
+            key: 'user_type',
+            label: 'User Type',
+            type: 'multiselect',
+            options: filterOptions.user_types.map((type) => ({
+                label: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+                value: type,
+            })),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            type: 'multiselect',
+            options: filterOptions.statuses.map((status) => ({
+                label: status.charAt(0).toUpperCase() + status.slice(1),
+                value: status,
+            })),
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'multiselect',
+            options: filterOptions.departments.map((dept) => ({
+                label: dept.name,
+                value: dept.id.toString(),
+            })),
+        },
+        {
+            key: 'roles',
+            label: 'Roles',
+            type: 'multiselect',
+            options: filterOptions.roles.map((role) => ({
+                label: role.charAt(0).toUpperCase() + role.slice(1),
+                value: role,
+            })),
+        },
+        {
+            key: 'blood_group',
+            label: 'Blood Group',
+            type: 'multiselect',
+            options: filterOptions.blood_groups.map((group) => ({
+                label: group,
+                value: group,
+            })),
+        },
+    ];
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
@@ -225,16 +307,6 @@ export default function UsersIndex({
                     title="Users"
                     description="Manage users and permissions"
                     actions={[
-                        {
-                            label: 'Sort by Name',
-                            variant: 'outline',
-                            onClick: () => handleSort('name')
-                        },
-                        {
-                            label: 'Sort by ID',
-                            variant: 'outline',
-                            onClick: () => handleSort('id')
-                        },
                         {
                             label: 'Export Users',
                             variant: 'outline',
@@ -249,19 +321,19 @@ export default function UsersIndex({
                     stats={[
                         {
                             label: 'Total Users',
-                            value: stats?.total || users?.total || 0,
+                            value: stats.total,
                         },
                         {
                             label: 'Active Users',
-                            value: stats?.active || users?.total || 0,
+                            value: stats.active,
                         },
                         {
                             label: 'Drivers',
-                            value: stats?.drivers || 0,
+                            value: stats.drivers,
                         },
                         {
                             label: 'Inactive',
-                            value: stats?.inactive || 0,
+                            value: stats.inactive,
                         },
                     ]}
                 />
@@ -273,20 +345,11 @@ export default function UsersIndex({
                     queryParams={queryParams}
                     filterOptions={filterOptions}
                     filters={filters}
-                    searchPlaceholder="Search users..."
+                    searchPlaceholder="Search users by name, email, username, or department..."
                     exportable={true}
                     onRowClick={handleRowClick}
                     emptyMessage="No users found. Add your first user to get started."
                 />
-
-                {/* Debug Info */}
-                <div className="mt-4 p-4 bg-gray-100 rounded">
-                    <h3 className="font-bold">Debug Info:</h3>
-                    <p>Current Sort: {queryParams?.sort || 'none'}</p>
-                    <p>Direction: {queryParams?.direction || 'none'}</p>
-                    <p>Total Records: {users?.total || 0}</p>
-                    <p>Current Page: {users?.current_page || 1}</p>
-                </div>
             </div>
         </AppSidebarLayout>
     );
