@@ -24,6 +24,11 @@ const mainNavItems: NavItem[] = [
         icon: Shield,
     },
     {
+        title: 'Departments',
+        href: '/departments',
+        icon: Shield,
+    },
+    {
         title: 'Users',
         href: '/users',
         icon: Users,
