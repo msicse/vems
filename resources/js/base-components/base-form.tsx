@@ -146,6 +146,8 @@ interface FormFieldProps {
   description?: string
   validation?: ValidationRule[]
   className?: string
+  multiline?: boolean
+  rows?: number
 }
 
 export function FormField({
@@ -162,11 +164,13 @@ export function FormField({
   autoFocus = false,
   description,
   validation = [],
-  className
+  className,
+  multiline = false,
+  rows = 4
 }: FormFieldProps) {
   const [clientError, setClientError] = React.useState<string>()
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value
     onChange(newValue)
 
@@ -186,20 +190,37 @@ export function FormField({
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={handleChange}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        autoComplete={autoComplete}
-        autoFocus={autoFocus}
-        aria-invalid={!!displayError}
-        aria-describedby={description ? `${name}-description` : undefined}
-      />
+      {multiline ? (
+        <textarea
+          id={name}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autoFocus={autoFocus}
+          rows={rows}
+          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-invalid={!!displayError}
+          aria-describedby={description ? `${name}-description` : undefined}
+        />
+      ) : (
+        <Input
+          id={name}
+          name={name}
+          type={type}
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          aria-invalid={!!displayError}
+          aria-describedby={description ? `${name}-description` : undefined}
+        />
+      )}
 
       {description && (
         <p id={`${name}-description`} className="text-sm text-muted-foreground">

@@ -6,6 +6,7 @@ use App\Models\Vendor;
 use App\Models\VendorContactPerson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class VendorController extends Controller
@@ -77,7 +78,16 @@ class VendorController extends Controller
             'website' => 'nullable|url|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-            'contact_persons' => 'array|min:2', // Minimum 2 contact persons
+            'trade_license' => 'nullable|string|max:255',
+            'trade_license_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'tin' => 'nullable|string|max:255',
+            'tin_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'bin' => 'nullable|string|max:255',
+            'bin_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'tax_return' => 'nullable|string|max:255',
+            'tax_return_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'bank_details' => 'nullable|string',
+            'contact_persons' => 'array|min:1', // Minimum 1 contact person
             'contact_persons.*.name' => 'required|string|max:255',
             'contact_persons.*.position' => 'nullable|string|max:255',
             'contact_persons.*.phone' => 'nullable|string|max:20',
@@ -86,7 +96,51 @@ class VendorController extends Controller
             'contact_persons.*.notes' => 'nullable|string',
         ]);
 
-        $vendor = Vendor::create($validated);
+        $data = $request->except(['trade_license_file', 'tin_file', 'bin_file', 'tax_return_file']);
+
+        // Handle file uploads
+        if ($request->hasFile('trade_license_file')) {
+            $file = $request->file('trade_license_file');
+            $fileName = 'trade_license_' . time() . '.' . $file->getClientOriginalExtension();
+            // Store in public disk directly (not as a subdirectory called public)
+            $result = $file->storeAs('vendor_documents', $fileName, 'public');
+            \Log::info('Trade license file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
+            $data['trade_license_file'] = $fileName;
+        } else {
+            \Log::info('No trade_license_file uploaded: ' . json_encode($request->all()));
+        }
+
+        if ($request->hasFile('tin_file')) {
+            $file = $request->file('tin_file');
+            $fileName = 'tin_' . time() . '.' . $file->getClientOriginalExtension();
+            $result = $file->storeAs('vendor_documents', $fileName, 'public');
+            \Log::info('TIN file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
+            $data['tin_file'] = $fileName;
+        } else {
+            \Log::info('No tin_file uploaded');
+        }
+
+        if ($request->hasFile('bin_file')) {
+            $file = $request->file('bin_file');
+            $fileName = 'bin_' . time() . '.' . $file->getClientOriginalExtension();
+            $result = $file->storeAs('vendor_documents', $fileName, 'public');
+            \Log::info('BIN file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
+            $data['bin_file'] = $fileName;
+        } else {
+            \Log::info('No bin_file uploaded');
+        }
+
+        if ($request->hasFile('tax_return_file')) {
+            $file = $request->file('tax_return_file');
+            $fileName = 'tax_return_' . time() . '.' . $file->getClientOriginalExtension();
+            $result = $file->storeAs('vendor_documents', $fileName, 'public');
+            \Log::info('Tax return file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
+            $data['tax_return_file'] = $fileName;
+        } else {
+            \Log::info('No tax_return_file uploaded');
+        }
+
+        $vendor = Vendor::create($data);
 
         // Create contact persons
         if (isset($validated['contact_persons'])) {
@@ -143,8 +197,8 @@ class VendorController extends Controller
         $existingContactsCount = $vendor->contactPersons()->count();
         $submittedContactsCount = count($request->input('contact_persons', []));
 
-        // Only require minimum 2 if no existing contacts and no submitted contacts
-        $minContactsRule = ($existingContactsCount > 0 || $submittedContactsCount >= 2) ? 'array' : 'array|min:2';
+        // Only require minimum 1 if no existing contacts and no submitted contacts
+        $minContactsRule = ($existingContactsCount > 0 || $submittedContactsCount >= 1) ? 'array' : 'array|min:1';
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -154,6 +208,15 @@ class VendorController extends Controller
             'website' => 'nullable|url|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
+            'trade_license' => 'nullable|string|max:255',
+            'trade_license_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'tin' => 'nullable|string|max:255',
+            'tin_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'bin' => 'nullable|string|max:255',
+            'bin_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'tax_return' => 'nullable|string|max:255',
+            'tax_return_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'bank_details' => 'nullable|string',
             'contact_persons' => $minContactsRule,
             'contact_persons.*.id' => 'nullable|exists:vendor_contact_persons,id',
             'contact_persons.*.name' => 'required|string|max:255',
@@ -165,7 +228,63 @@ class VendorController extends Controller
         ]);
 
         try {
-            $vendor->update($validated);
+            $data = $request->except(['trade_license_file', 'tin_file', 'bin_file', 'tax_return_file']);
+
+            // Handle file uploads
+            \Log::info('Checking for trade_license_file upload');
+            if ($request->hasFile('trade_license_file')) {
+                \Log::info('trade_license_file is being uploaded');
+                // Remove old file if it exists
+                if ($vendor->trade_license_file) {
+                    \Log::info('Removing old trade license file: ' . $vendor->trade_license_file);
+                    Storage::delete('public/vendor_documents/' . $vendor->trade_license_file);
+                }
+
+                $file = $request->file('trade_license_file');
+                $originalName = $file->getClientOriginalName();
+                $fileName = 'trade_license_' . time() . '.' . $file->getClientOriginalExtension();
+                \Log::info('New trade license file: ' . $fileName . ' (original: ' . $originalName . ')');
+                $result = $file->storeAs('vendor_documents', $fileName, 'public');
+                \Log::info('Trade license file store result: ' . ($result ?: 'failed') . ' to public disk');
+                $data['trade_license_file'] = $fileName;
+            } else {
+                \Log::info('No trade_license_file present in the request');
+            }
+
+            if ($request->hasFile('tin_file')) {
+                if ($vendor->tin_file) {
+                    Storage::delete('public/vendor_documents/' . $vendor->tin_file);
+                }
+
+                $file = $request->file('tin_file');
+                $fileName = 'tin_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('vendor_documents', $fileName, 'public');
+                $data['tin_file'] = $fileName;
+            }
+
+            if ($request->hasFile('bin_file')) {
+                if ($vendor->bin_file) {
+                    Storage::delete('public/vendor_documents/' . $vendor->bin_file);
+                }
+
+                $file = $request->file('bin_file');
+                $fileName = 'bin_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('vendor_documents', $fileName, 'public');
+                $data['bin_file'] = $fileName;
+            }
+
+            if ($request->hasFile('tax_return_file')) {
+                if ($vendor->tax_return_file) {
+                    Storage::delete('public/vendor_documents/' . $vendor->tax_return_file);
+                }
+
+                $file = $request->file('tax_return_file');
+                $fileName = 'tax_return_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('vendor_documents', $fileName, 'public');
+                $data['tax_return_file'] = $fileName;
+            }
+
+            $vendor->update($data);
             \Log::info('Vendor updated successfully:', ['vendor_id' => $vendor->id]);
 
             // Update contact persons

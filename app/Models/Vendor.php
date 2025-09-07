@@ -17,6 +17,15 @@ class Vendor extends Model
         'email',
         'website',
         'description',
+        'trade_license',
+        'trade_license_file',
+        'tin',
+        'tin_file',
+        'bin',
+        'bin_file',
+        'tax_return',
+        'tax_return_file',
+        'bank_details',
     ];
 
     protected $casts = [

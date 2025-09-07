@@ -1,12 +1,12 @@
 import { BaseForm, FormField, FormSelect } from '@/base-components/base-form';
 import { PageHeader } from '@/base-components/page-header';
-import { useFlashMessage } from '@/components/flash-messages';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useFlashMessage } from '@/components/flash-messages';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, Vendor } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, LayoutGrid, Save, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, UserPlus, LayoutGrid } from 'lucide-react';
 
 interface EditVendorProps {
     vendor: Vendor;
@@ -49,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function EditVendor({ vendor }: EditVendorProps) {
-    const { showError } = useFlashMessage();
+    const { showSuccess, showError } = useFlashMessage();
 
     const { data, setData, put, processing, errors } = useForm<VendorForm>({
         name: vendor.name,
@@ -68,45 +68,41 @@ export default function EditVendor({ vendor }: EditVendorProps) {
         tax_return: vendor.tax_return || '',
         tax_return_file: null,
         bank_details: vendor.bank_details || '',
-        contact_persons:
-            vendor.contact_persons && vendor.contact_persons.length > 0
-                ? vendor.contact_persons.map((contact) => ({
-                      id: contact.id,
-                      name: contact.name,
-                      position: contact.position || '',
-                      phone: contact.phone || '',
-                      email: contact.email || '',
-                      is_primary: contact.is_primary,
-                      notes: contact.notes || '',
-                  }))
-                : [
-                      {
-                          name: '',
-                          position: '',
-                          phone: '',
-                          email: '',
-                          is_primary: true,
-                          notes: '',
-                      },
-                      {
-                          name: '',
-                          position: '',
-                          phone: '',
-                          email: '',
-                          is_primary: false,
-                          notes: '',
-                      },
-                  ],
+        contact_persons: vendor.contact_persons && vendor.contact_persons.length > 0
+            ? vendor.contact_persons.map(contact => ({
+                id: contact.id,
+                name: contact.name,
+                position: contact.position || '',
+                phone: contact.phone || '',
+                email: contact.email || '',
+                is_primary: contact.is_primary,
+                notes: contact.notes || '',
+            }))
+            : [
+                {
+                    name: '',
+                    position: '',
+                    phone: '',
+                    email: '',
+                    is_primary: true,
+                    notes: '',
+                },
+                {
+                    name: '',
+                    position: '',
+                    phone: '',
+                    email: '',
+                    is_primary: false,
+                    notes: '',
+                },
+            ],
     });
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Log the form data to help with debugging
-        console.log('Form data being submitted:', data);
-
         // Only keep contacts with names (valid contacts)
-        const validContactPersons = data.contact_persons.filter((c) => c.name.trim() !== '');
+        const validContactPersons = data.contact_persons.filter(c => c.name.trim() !== '');
         const totalValidContacts = validContactPersons.length;
 
         if (totalValidContacts < 1) {
@@ -115,7 +111,6 @@ export default function EditVendor({ vendor }: EditVendorProps) {
         }
 
         // Submit form with FormData option for file uploads
-        // With useForm hook, we only need to call the put method with the route - data is already handled
         put(route('vendors.update', vendor.id), {
             forceFormData: true,
             onError: (errors) => {
@@ -123,11 +118,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                 if (Object.keys(errors).length === 0) {
                     showError('Failed to update vendor. Please try again.');
                 }
-                console.error('Validation errors:', errors);
-            },
-            onSuccess: () => {
-                console.log('Vendor updated successfully');
-            },
+            }
         });
     };
 
@@ -203,8 +194,8 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                             {/* Basic Information */}
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="flex items-center text-base">
-                                        <LayoutGrid className="mr-2 h-4 w-4" />
+                                    <CardTitle className="text-base flex items-center">
+                                        <LayoutGrid className="h-4 w-4 mr-2" />
                                         Basic Information
                                     </CardTitle>
                                 </CardHeader>
@@ -233,7 +224,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                     options={statusOptions}
                                                     error={errors.status}
                                                     required
-                                                    className="w-28 text-xs"
+                                                    className="text-xs w-28"
                                                 />
                                             </div>
 
@@ -250,7 +241,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                                             <div>
                                                 <FormField
                                                     label="Email"
@@ -278,7 +269,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                                             <div>
                                                 <FormField
                                                     label="Address"
@@ -314,10 +305,12 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                             {/* Documents & Bank Details */}
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="flex items-center text-base">Documents & Bank Details</CardTitle>
+                                    <CardTitle className="text-base flex items-center">
+                                        Documents & Bank Details
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-2">
-                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div className="space-y-6">
                                             {/* Trade License */}
                                             <div>
@@ -340,12 +333,14 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                     <div className="flex items-center space-x-2">
                                                         <label
                                                             htmlFor="trade_license_file"
-                                                            className="inline-flex cursor-pointer items-center rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer"
                                                         >
                                                             Choose File
                                                         </label>
                                                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {data.trade_license_file ? data.trade_license_file.name : 'No file chosen'}
+                                                            {data.trade_license_file
+                                                                ? data.trade_license_file.name
+                                                                : 'No file chosen'}
                                                         </span>
                                                         {vendor.trade_license_file && (
                                                             <a
@@ -359,7 +354,9 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                         )}
                                                     </div>
                                                     {errors.trade_license_file && (
-                                                        <p className="mt-1 text-xs text-red-500">{errors.trade_license_file}</p>
+                                                        <p className="text-xs text-red-500 mt-1">
+                                                            {errors.trade_license_file}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </div>
@@ -385,7 +382,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                     <div className="flex items-center space-x-2">
                                                         <label
                                                             htmlFor="tin_file"
-                                                            className="inline-flex cursor-pointer items-center rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer"
                                                         >
                                                             Choose File
                                                         </label>
@@ -403,7 +400,9 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    {errors.tin_file && <p className="mt-1 text-xs text-red-500">{errors.tin_file}</p>}
+                                                    {errors.tin_file && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.tin_file}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -430,7 +429,7 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                     <div className="flex items-center space-x-2">
                                                         <label
                                                             htmlFor="bin_file"
-                                                            className="inline-flex cursor-pointer items-center rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer"
                                                         >
                                                             Choose File
                                                         </label>
@@ -448,7 +447,9 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    {errors.bin_file && <p className="mt-1 text-xs text-red-500">{errors.bin_file}</p>}
+                                                    {errors.bin_file && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.bin_file}</p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -473,12 +474,14 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                     <div className="flex items-center space-x-2">
                                                         <label
                                                             htmlFor="tax_return_file"
-                                                            className="inline-flex cursor-pointer items-center rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer"
                                                         >
                                                             Choose File
                                                         </label>
                                                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {data.tax_return_file ? data.tax_return_file.name : 'No file chosen'}
+                                                            {data.tax_return_file
+                                                                ? data.tax_return_file.name
+                                                                : 'No file chosen'}
                                                         </span>
                                                         {vendor.tax_return_file && (
                                                             <a
@@ -491,7 +494,11 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    {errors.tax_return_file && <p className="mt-1 text-xs text-red-500">{errors.tax_return_file}</p>}
+                                                    {errors.tax_return_file && (
+                                                        <p className="text-xs text-red-500 mt-1">
+                                                            {errors.tax_return_file}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -516,12 +523,18 @@ export default function EditVendor({ vendor }: EditVendorProps) {
 
                             {/* Contact Persons */}
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="flex items-center text-base">
-                                        <UserPlus className="mr-2 h-4 w-4" />
+                                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                                    <CardTitle className="text-base flex items-center">
+                                        <UserPlus className="h-4 w-4 mr-2" />
                                         Contact Persons
                                     </CardTitle>
-                                    <Button type="button" size="sm" variant="outline" onClick={addContactPerson} className="h-7 text-xs">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={addContactPerson}
+                                        className="text-xs h-7"
+                                    >
                                         Add Contact
                                     </Button>
                                 </CardHeader>
@@ -529,18 +542,18 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                     {data.contact_persons.map((contact, index) => (
                                         <div
                                             key={index}
-                                            className={`mb-4 rounded-md border p-4 ${
+                                            className={`border rounded-md p-4 mb-4 ${
                                                 contact.is_primary
                                                     ? 'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
                                                     : 'border-gray-200 dark:border-gray-800'
                                             }`}
                                         >
-                                            <div className="mb-2 flex items-center justify-between">
+                                            <div className="flex justify-between items-center mb-2">
                                                 <div className="flex items-center">
-                                                    <h3 className="flex items-center text-sm font-medium">
+                                                    <h3 className="text-sm font-medium flex items-center">
                                                         Contact Person {index + 1}
                                                         {contact.is_primary && (
-                                                            <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
                                                                 Primary
                                                             </span>
                                                         )}
@@ -548,11 +561,17 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                                 </div>
 
                                                 <div className="flex items-center space-x-2">
-                                                    <label className="flex cursor-pointer items-center space-x-1">
+                                                    <label className="flex items-center space-x-1 cursor-pointer">
                                                         <input
                                                             type="checkbox"
                                                             checked={contact.is_primary}
-                                                            onChange={(e) => updateContactPerson(index, 'is_primary', e.target.checked)}
+                                                            onChange={(e) =>
+                                                                updateContactPerson(
+                                                                    index,
+                                                                    'is_primary',
+                                                                    e.target.checked
+                                                                )
+                                                            }
                                                             className="form-checkbox h-3 w-3 text-blue-600"
                                                         />
                                                         <span className="text-xs">Make Primary</span>
@@ -573,41 +592,49 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                                 <FormField
                                                     label="Name"
-                                                    name={`contact_persons.${index}.name`}
                                                     value={contact.name}
-                                                    onChange={(value) => updateContactPerson(index, 'name', value)}
-                                                    error={errors[`contact_persons.${index}.name` as keyof typeof errors]}
+                                                    onChange={(value) =>
+                                                        updateContactPerson(index, 'name', value)
+                                                    }
+                                                    error={errors[`contact_persons.${index}.name`]}
                                                     required
+                                                    labelClassName="text-xs"
                                                     className="text-xs"
                                                 />
 
                                                 <FormField
                                                     label="Position"
-                                                    name={`contact_persons.${index}.position`}
                                                     value={contact.position}
-                                                    onChange={(value) => updateContactPerson(index, 'position', value)}
-                                                    error={errors[`contact_persons.${index}.position` as keyof typeof errors]}
+                                                    onChange={(value) =>
+                                                        updateContactPerson(index, 'position', value)
+                                                    }
+                                                    error={errors[`contact_persons.${index}.position`]}
+                                                    labelClassName="text-xs"
                                                     className="text-xs"
                                                 />
                                             </div>
 
-                                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 mt-2">
                                                 <FormField
                                                     label="Phone"
-                                                    name={`contact_persons.${index}.phone`}
                                                     value={contact.phone}
-                                                    onChange={(value) => updateContactPerson(index, 'phone', value)}
-                                                    error={errors[`contact_persons.${index}.phone` as keyof typeof errors]}
+                                                    onChange={(value) =>
+                                                        updateContactPerson(index, 'phone', value)
+                                                    }
+                                                    error={errors[`contact_persons.${index}.phone`]}
+                                                    labelClassName="text-xs"
                                                     className="text-xs"
                                                 />
 
                                                 <FormField
                                                     label="Email"
-                                                    name={`contact_persons.${index}.email`}
                                                     type="email"
                                                     value={contact.email}
-                                                    onChange={(value) => updateContactPerson(index, 'email', value)}
-                                                    error={errors[`contact_persons.${index}.email` as keyof typeof errors]}
+                                                    onChange={(value) =>
+                                                        updateContactPerson(index, 'email', value)
+                                                    }
+                                                    error={errors[`contact_persons.${index}.email`]}
+                                                    labelClassName="text-xs"
                                                     className="text-xs"
                                                 />
                                             </div>
@@ -615,12 +642,14 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                                             <div className="mt-2">
                                                 <FormField
                                                     label="Notes"
-                                                    name={`contact_persons.${index}.notes`}
                                                     value={contact.notes}
-                                                    onChange={(value) => updateContactPerson(index, 'notes', value)}
-                                                    error={errors[`contact_persons.${index}.notes` as keyof typeof errors]}
+                                                    onChange={(value) =>
+                                                        updateContactPerson(index, 'notes', value)
+                                                    }
+                                                    error={errors[`contact_persons.${index}.notes`]}
                                                     multiline
                                                     rows={1}
+                                                    labelClassName="text-xs"
                                                     className="text-xs"
                                                 />
                                             </div>
@@ -630,11 +659,15 @@ export default function EditVendor({ vendor }: EditVendorProps) {
                             </Card>
 
                             <div className="flex items-center justify-end space-x-2">
-                                <Button variant="outline" type="button" onClick={() => window.history.back()}>
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => window.history.back()}
+                                >
                                     Cancel
                                 </Button>
                                 <Button type="submit" disabled={processing}>
-                                    <Save className="mr-2 h-4 w-4" />
+                                    <Save className="h-4 w-4 mr-2" />
                                     Update Vendor
                                 </Button>
                             </div>
