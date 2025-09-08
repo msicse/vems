@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class, // UserSeeder should handle VMS user fields
             VehicleSeeder::class,
             VendorSeeder::class,
+            RouteStopSeeder::class,
         ]);
     }
 }

@@ -4,6 +4,8 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\VehicleRouteController;
+use App\Http\Controllers\StopController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DepartmentController;
@@ -64,6 +66,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Drivers management routes
     Route::resource('drivers', DriversController::class)->except(['create', 'store']);
+
+    // Route management routes
+    Route::resource('routes', VehicleRouteController::class);
+
+    // Stop management API routes
+    Route::get('/api/stops', [StopController::class, 'index'])->name('api.stops.index');
+    Route::post('/api/stops', [StopController::class, 'store'])->name('api.stops.store');
 
     // Role and Permission management routes
     Route::resource('roles', RoleController::class);
