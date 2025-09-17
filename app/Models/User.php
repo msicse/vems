@@ -119,6 +119,11 @@ class User extends Authenticatable
         return $this->hasMany(Vehicle::class, 'assigned_driver_id');
     }
 
+    public function vehicleAssignments(): HasMany
+    {
+        return $this->hasMany(\App\Models\VehicleDriverAssignment::class, 'driver_id');
+    }
+
     public function driverTrips(): HasMany
     {
         return $this->hasMany(Trip::class, 'driver_id');
@@ -176,7 +181,7 @@ class User extends Authenticatable
     // Helper Methods
     public function isDriver(): bool
     {
-        return in_array($this->user_type, ['driver', 'transport_manager']) 
+        return in_array($this->user_type, ['driver', 'transport_manager'])
                && !empty($this->driving_license_no);
     }
 
@@ -197,7 +202,7 @@ class User extends Authenticatable
 
     public function canDrive(): bool
     {
-        return $this->isDriver() 
+        return $this->isDriver()
                && $this->driver_status === 'available'
                && ($this->license_expiry_date ? $this->license_expiry_date > now() : true)
                && $this->status === 'active';
@@ -227,7 +232,7 @@ class User extends Authenticatable
     {
         $totalTrips = $this->driverTrips()->count();
         $completedTrips = $this->driverTrips()->where('status', 'completed')->count();
-        
+
         return $totalTrips > 0 ? ($completedTrips / $totalTrips) * 100 : 0;
     }
 
@@ -236,12 +241,12 @@ class User extends Authenticatable
         if ($this->isDriver() && $trip->status === 'completed') {
             $this->increment('total_trips_completed');
             $this->total_distance_covered += $trip->actual_distance ?? 0;
-            
+
             // Update average rating if trip has rating
             if ($trip->driver_rating) {
                 $this->updateAverageRating($trip->driver_rating);
             }
-            
+
             $this->save();
         }
     }
@@ -251,7 +256,7 @@ class User extends Authenticatable
         $totalRatedTrips = $this->driverTrips()
                                ->whereNotNull('driver_rating')
                                ->count();
-        
+
         if ($totalRatedTrips === 1) {
             $this->average_rating = $newRating;
         } else {
@@ -265,9 +270,9 @@ class User extends Authenticatable
         if (!$this->license_expiry_date) {
             return 'not_provided';
         }
-        
+
         $daysUntilExpiry = now()->diffInDays($this->license_expiry_date, false);
-        
+
         if ($daysUntilExpiry < 0) {
             return 'expired';
         } elseif ($daysUntilExpiry <= 30) {

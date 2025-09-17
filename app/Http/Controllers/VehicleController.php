@@ -204,10 +204,20 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle)
     {
-        $vehicle->load(['vendor.contactPersons', 'driver']);
+        $vehicle->load([
+            'vendor.contactPersons',
+            'driver',
+            'driverAssignments.driver:id,name,email',
+            'driverAssignments.assigner:id,name',
+        ]);
+
+        $assignments = $vehicle->driverAssignments()
+            ->orderByDesc('started_at')
+            ->get();
 
         return Inertia::render('vehicles/show', [
             'vehicle' => $vehicle,
+            'assignments' => $assignments,
         ]);
     }
 

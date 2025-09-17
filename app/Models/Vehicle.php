@@ -76,6 +76,22 @@ class Vehicle extends Model
     }
 
     /**
+     * Driver assignment history
+     */
+    public function driverAssignments()
+    {
+        return $this->hasMany(VehicleDriverAssignment::class);
+    }
+
+    /**
+     * Current driver assignment
+     */
+    public function currentDriverAssignment()
+    {
+        return $this->hasOne(VehicleDriverAssignment::class)->where('is_current', true)->latestOfMany('started_at');
+    }
+
+    /**
      * Check if tax token is expired or expiring soon
      */
     public function isTaxTokenExpiring(): bool

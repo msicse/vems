@@ -7,8 +7,18 @@ import { BreadcrumbItem, Vehicle } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 
+type Assignment = {
+    id: number
+    driver?: { id: number; name: string; email?: string } | null
+    assigner?: { id: number; name: string } | null
+    started_at: string
+    ended_at: string | null
+    is_current: boolean
+}
+
 interface ShowVehicleProps {
     vehicle: Vehicle;
+    assignments?: Assignment[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicle Details', href: '#' },
 ];
 
-export default function ShowVehicle({ vehicle }: ShowVehicleProps) {
+export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehicleProps) {
     const handleDelete = () => {
         if (confirm(`Are you sure you want to delete ${vehicle.brand} ${vehicle.model}?`)) {
             router.delete(route('vehicles.destroy', vehicle.id));
@@ -464,6 +474,45 @@ export default function ShowVehicle({ vehicle }: ShowVehicleProps) {
                         </Card>
                     )}
                 </div>
+
+                {/* Driver Assignment History */}
+                {assignments.length > 0 && (
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Driver Assignment History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto rounded border">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Driver</th>
+                                            <th className="px-3 py-2 text-left">Started</th>
+                                            <th className="px-3 py-2 text-left">Ended</th>
+                                            <th className="px-3 py-2 text-left">Assigned By</th>
+                                            <th className="px-3 py-2 text-left">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {assignments.map((a) => (
+                                            <tr key={a.id} className="border-t">
+                                                <td className="px-3 py-2">{a.driver?.name ?? '-'}</td>
+                                                <td className="px-3 py-2">{new Date(a.started_at).toLocaleString()}</td>
+                                                <td className="px-3 py-2">{a.ended_at ? new Date(a.ended_at).toLocaleString() : '-'}</td>
+                                                <td className="px-3 py-2">{a.assigner?.name ?? '-'}</td>
+                                                <td className="px-3 py-2">
+                                                    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs ${a.is_current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                        {a.is_current ? 'Current' : 'Past'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Actions */}
                 <Card>

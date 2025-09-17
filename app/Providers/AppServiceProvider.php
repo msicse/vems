@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Vehicle;
+use App\Observers\VehicleObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::before(function ($user, $ability) {
-        return $user->hasRole('super-admin') ? true : null;
-    });
+            return $user->hasRole('super-admin') ? true : null;
+        });
+
+        // Observe vehicle changes to track driver assignments
+        Vehicle::observe(VehicleObserver::class);
     }
 }
