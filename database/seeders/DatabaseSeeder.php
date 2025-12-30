@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         Product::factory(200)->create();
 
         $this->call([
+            RolePermissionSeeder::class, // Must run first to create roles
             DepartmentSeeder::class,
             UserSeeder::class, // UserSeeder should handle VMS user fields
             VehicleSeeder::class,

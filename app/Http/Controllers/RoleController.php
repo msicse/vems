@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
-use App\Models\Role;
-use App\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -42,6 +42,12 @@ class RoleController extends Controller
             'with_permissions' => Role::has('permissions')->count(),
             'empty' => Role::doesntHave('users')->doesntHave('permissions')->count(),
         ];
+
+        \Log::info('Roles Index', [
+            'roles_count' => $roles->count(),
+            'total' => $roles->total(),
+            'stats' => $stats,
+        ]);
 
         return Inertia::render('roles/index', [
             'roles' => $roles,
