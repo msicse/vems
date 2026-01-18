@@ -332,10 +332,18 @@ export function ServerSideDataTable<T>({
               const filter = filters.find(f => f.key === key)
               const label = filter?.label || key
 
+              // Get display labels for the selected values
+              const displayText = values.length === 1
+                ? (() => {
+                    const option = filter?.options?.find(opt => String(opt.value) === String(values[0]))
+                    return option?.label || String(values[0])
+                  })()
+                : `${values.length} selected`
+
               return (
                 <Badge key={key} variant="secondary" className="gap-1 max-w-xs">
                   <span className="truncate">
-                    {label}: {values.length === 1 ? values[0] : `${values.length} selected`}
+                    {label}: {displayText}
                   </span>
                   <Button
                     variant="ghost"

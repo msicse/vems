@@ -5,22 +5,41 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, User } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Mail, MapPin, Phone, Trash2, Truck, UserCheck, UserX } from 'lucide-react';
+import {
+    ArrowLeft,
+    Edit,
+    Mail,
+    MapPin,
+    Phone,
+    Trash2,
+    User as UserIcon,
+    UserCheck,
+    UserX,
+    CalendarDays,
+    Building,
+    Car,
+    CreditCard,
+    Shield,
+    MessageSquare,
+    Droplets,
+    FileText,
+    Star
+} from 'lucide-react';
 
-interface ShowDriverProps {
-    driver: User;
+interface ShowUserProps {
+    user: User;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Drivers', href: '/drivers' },
-    { title: 'Driver Details', href: '#' },
+    { title: 'Users', href: '/users' },
+    { title: 'User Details', href: '#' },
 ];
 
-export default function ShowDriver({ driver }: ShowDriverProps) {
+export default function ShowUser({ user }: ShowUserProps) {
     const handleDelete = () => {
-        if (confirm(`Are you sure you want to delete driver ${driver.name}?`)) {
-            router.delete(route('drivers.destroy', driver.id));
+        if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+            router.delete(route('drivers.destroy', user.id));
         }
     };
 
@@ -33,7 +52,7 @@ export default function ShowDriver({ driver }: ShowDriverProps) {
             case 'suspended':
                 return <UserX className="h-4 w-4" />;
             default:
-                return <Truck className="h-4 w-4" />;
+                return <UserIcon className="h-4 w-4" />;
         }
     };
 
@@ -52,233 +71,524 @@ export default function ShowDriver({ driver }: ShowDriverProps) {
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${driver.name} - Driver Details`} />
+            <Head title={`${user.name} - User Details`} />
 
             <div className="space-y-6">
+                {/* Important Alerts */}
+                {user.user_type === 'driver' && user.license_expiry_date && new Date(user.license_expiry_date) < new Date() && (
+                    <Card className="border-destructive bg-destructive/5">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-2 text-destructive">
+                                <UserX className="h-5 w-5" />
+                                <div>
+                                    <h4 className="font-semibold">Expired Driving License</h4>
+                                    <p className="text-sm">This driver's license expired on {new Date(user.license_expiry_date).toLocaleDateString()}. Please renew immediately.</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <PageHeader
-                    title={driver.name}
-                    description="Driver profile and information."
+                    title={user.name}
+                    description="User profile and information."
                     actions={[
                         {
-                            label: 'Back to Drivers',
+                            label: 'Back to Users',
                             icon: <ArrowLeft className="mr-2 h-4 w-4" />,
                             href: route('drivers.index'),
                             variant: 'outline',
                         },
                         {
-                            label: 'Edit Driver',
+                            label: 'Edit User',
                             icon: <Edit className="mr-2 h-4 w-4" />,
-                            href: route('drivers.edit', driver.id),
+                            href: route('users.edit', user.id),
                         },
                     ]}
                 />
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* Driver Profile */}
+                    {/* User Profile - Enhanced */}
                     <Card className="lg:col-span-2">
                         <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                                <Truck className="h-5 w-5" />
-                                <span>Driver Information</span>
-                            </CardTitle>
+                            <CardTitle>User Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Profile Header */}
                             <div className="flex items-center space-x-4">
                                 <div className="flex-shrink-0">
-                                    {driver.image ? (
-                                        <img className="h-20 w-20 rounded-full" src={driver.image} alt={driver.name} />
+                                    {user.image ? (
+                                        <img className="h-16 w-16 rounded-full object-cover" src={user.image} alt={user.name} />
                                     ) : (
-                                        <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <span className="text-2xl font-medium text-blue-700">
-                                                {driver.name.charAt(0).toUpperCase()}
+                                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                                            <span className="text-xl font-semibold text-primary">
+                                                {user.name.charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-medium">{driver.name}</h3>
-                                    <div className="flex items-center space-x-2 mt-2">
-                                        <Badge variant={getStatusVariant(driver.status)} className="gap-1">
-                                            {getStatusIcon(driver.status)}
-                                            {driver.status}
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-semibold">{user.name}</h3>
+                                    {user.username && (
+                                        <p className="text-sm text-muted-foreground">@{user.username}</p>
+                                    )}
+                                    <div className="flex items-center space-x-2">
+                                        <Badge variant={getStatusVariant(user.status)} className="gap-1">
+                                            {getStatusIcon(user.status)}
+                                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                                         </Badge>
-                                        <Badge variant="outline" className="gap-1">
-                                            <Truck className="h-3 w-3" />
-                                            Driver
-                                        </Badge>
+                                        {user.user_type && (
+                                            <Badge variant="outline" className="capitalize gap-1">
+                                                <Shield className="h-3 w-3" />
+                                                {user.user_type.replace('_', ' ')}
+                                            </Badge>
+                                        )}
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Basic Information */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Basic Information</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {user.employee_id && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Employee ID</label>
+                                            </div>
+                                            <p className="text-sm font-mono">{user.employee_id}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-1">
+                                        <div className="flex items-center space-x-2">
+                                            <Mail className="h-4 w-4 text-muted-foreground" />
+                                            <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                        </div>
+                                        <p className="text-sm">{user.email || 'N/A'}</p>
+                                    </div>
+
+                                    {user.department_id && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Building className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                            </div>
+                                            <p className="text-sm">Department #{user.department_id}</p>
+                                        </div>
+                                    )}
+
+                                    {user.blood_group && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Droplets className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Blood Group</label>
+                                            </div>
+                                            <p className="font-mono text-sm font-semibold text-red-600">{user.blood_group}</p>
+                                        </div>
+                                    )}
+
+                                    {user.joining_date && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Joining Date</label>
+                                            </div>
+                                            <p className="text-sm">
+                                                {new Date(user.joining_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {user.probation_end_date && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Probation End Date</label>
+                                            </div>
+                                            <p className="text-sm">
+                                                {new Date(user.probation_end_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                                {new Date(user.probation_end_date) > new Date() && (
+                                                    <Badge variant="secondary" className="ml-2">On Probation</Badge>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Contact Information */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Contact Information</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {user.official_phone && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Official Phone</label>
+                                            </div>
+                                            <p className="text-sm font-mono">{user.official_phone}</p>
+                                        </div>
+                                    )}
+
+                                    {user.personal_phone && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Personal Phone</label>
+                                            </div>
+                                            <p className="text-sm font-mono">{user.personal_phone}</p>
+                                        </div>
+                                    )}
+
+                                    {user.whatsapp_id && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">WhatsApp</label>
+                                            </div>
+                                            <p className="text-sm font-mono">{user.whatsapp_id}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Legacy phone field for backward compatibility */}
+                                    {user.phone && !user.official_phone && !user.personal_phone && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                                            </div>
+                                            <p className="text-sm font-mono">{user.phone}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Identity Documents */}
+                            {(user.nid_number || user.passport_number || user.driving_license_no) && (
                                 <div className="space-y-4">
-                                    <h4 className="font-medium text-gray-900">Contact Details</h4>
-                                    
-                                    <div className="space-y-3">
-                                        <div className="flex items-center space-x-3">
-                                            <Mail className="h-4 w-4 text-gray-400" />
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
-                                                <p className="text-sm">{driver.email}</p>
+                                    <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Identity Documents</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {user.nid_number && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                                    <label className="text-sm font-medium text-muted-foreground">National ID</label>
+                                                </div>
+                                                <p className="text-sm font-mono">{user.nid_number}</p>
+                                            </div>
+                                        )}
+
+                                        {user.passport_number && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                                    <label className="text-sm font-medium text-muted-foreground">Passport</label>
+                                                </div>
+                                                <p className="text-sm font-mono">{user.passport_number}</p>
+                                            </div>
+                                        )}
+
+                                        {user.driving_license_no && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <Car className="h-4 w-4 text-muted-foreground" />
+                                                    <label className="text-sm font-medium text-muted-foreground">Driving License</label>
+                                                </div>
+                                                <p className="text-sm font-mono">{user.driving_license_no}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Emergency Contact */}
+                            {(user.emergency_contact_name || user.emergency_phone) && (
+                                <div className="space-y-4">
+                                    <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Emergency Contact</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {user.emergency_contact_name && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                                    <label className="text-sm font-medium text-muted-foreground">Contact Name</label>
+                                                </div>
+                                                <p className="text-sm">{user.emergency_contact_name}</p>
+                                                {user.emergency_contact_relation && (
+                                                    <p className="text-xs text-muted-foreground">({user.emergency_contact_relation})</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {user.emergency_phone && (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                                    <label className="text-sm font-medium text-muted-foreground">Emergency Phone</label>
+                                                </div>
+                                                <p className="text-sm font-mono">{user.emergency_phone}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Address Information */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Address Information</h4>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {user.area && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Area/Location</label>
+                                            </div>
+                                            <p className="text-sm font-medium">{user.area}</p>
+                                        </div>
+                                    )}
+
+                                    {user.present_address && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Present Address</label>
+                                            </div>
+                                            <p className="text-sm">{user.present_address}</p>
+                                        </div>
+                                    )}
+
+                                    {user.permanent_address && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Permanent Address</label>
+                                            </div>
+                                            <p className="text-sm">{user.permanent_address}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Legacy address field for backward compatibility */}
+                                    {user.address && !user.present_address && !user.permanent_address && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Address</label>
+                                            </div>
+                                            <p className="text-sm">{user.address}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* System Information & Driver Stats */}
+                    <div className="space-y-6">
+                        {/* Driver Statistics (if applicable) */}
+                        {user.user_type === 'driver' && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Car className="h-5 w-5" />
+                                        Driver Statistics
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {user.driver_status && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">Driver Status</label>
+                                            <p className="text-sm">
+                                                <Badge
+                                                    variant={user.driver_status === 'active' ? 'default' : 'secondary'}
+                                                    className="capitalize"
+                                                >
+                                                    {user.driver_status}
+                                                </Badge>
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {user.license_class && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">License Class</label>
+                                            <p className="text-sm font-mono">{user.license_class}</p>
+                                        </div>
+                                    )}
+
+                                    {user.license_issue_date && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">License Issue Date</label>
+                                            <p className="text-sm">
+                                                {new Date(user.license_issue_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {user.license_expiry_date && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">License Expiry</label>
+                                            <p className="text-sm">
+                                                {new Date(user.license_expiry_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                                {new Date(user.license_expiry_date) < new Date() && (
+                                                    <Badge variant="destructive" className="ml-2 text-xs">Expired</Badge>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {typeof user.total_trips_completed === 'number' && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">Total Trips</label>
+                                            <p className="text-sm font-semibold">{user.total_trips_completed}</p>
+                                        </div>
+                                    )}
+
+                                    {typeof user.total_distance_covered === 'number' && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">Distance Covered</label>
+                                            <p className="text-sm font-semibold">{user.total_distance_covered} km</p>
+                                        </div>
+                                    )}
+
+                                    {typeof user.average_rating === 'number' && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">Average Rating</label>
+                                            <div className="flex items-center gap-1">
+                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                <p className="text-sm font-semibold">{user.average_rating.toFixed(1)}</p>
                                             </div>
                                         </div>
-
-                                        {driver.phone && (
-                                            <div className="flex items-center space-x-3">
-                                                <Phone className="h-4 w-4 text-gray-400" />
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</label>
-                                                    <p className="text-sm">{driver.phone}</p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {driver.whatsapp_id && (
-                                            <div className="flex items-center space-x-3">
-                                                <Phone className="h-4 w-4 text-green-500" />
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">WhatsApp</label>
-                                                    <p className="text-sm">{driver.whatsapp_id}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h4 className="font-medium text-gray-900">Personal Information</h4>
-                                    
-                                    <div className="space-y-3">
-                                        {driver.blood_group && (
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Blood Group</label>
-                                                <p className="font-mono text-sm bg-red-50 text-red-700 px-2 py-1 rounded inline-block">
-                                                    {driver.blood_group}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {driver.address && (
-                                            <div className="flex items-start space-x-3">
-                                                <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</label>
-                                                    <p className="text-sm">{driver.address}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* System Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>System Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Driver ID</label>
-                                <p className="font-mono text-sm">{driver.id}</p>
-                            </div>
-                            
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Email Verified</label>
-                                <p className="text-sm">
-                                    {driver.email_verified_at ? (
-                                        <Badge variant="default" className="gap-1">
-                                            <UserCheck className="h-3 w-3" />
-                                            Verified
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="destructive" className="gap-1">
-                                            <UserX className="h-3 w-3" />
-                                            Not Verified
-                                        </Badge>
                                     )}
-                                </p>
-                            </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Joined</label>
-                                <p className="text-sm">
-                                    {new Date(driver.created_at).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                                <p className="text-sm">
-                                    {new Date(driver.updated_at).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}
-                                </p>
-                            </div>
-
-                            {driver.last_login_at && (
+                        {/* System Information */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Shield className="h-5 w-5" />
+                                    System Information
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Last Login</label>
-                                    <p className="text-sm">{driver.last_login_at}</p>
+                                    <label className="text-sm font-medium text-muted-foreground">User ID</label>
+                                    <p className="font-mono text-sm">{user.id}</p>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Email Verified</label>
+                                    <p className="text-sm">
+                                        {user.email_verified_at ? (
+                                            <Badge variant="default" className="gap-1">
+                                                <UserCheck className="h-3 w-3" />
+                                                Verified
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="destructive" className="gap-1">
+                                                <UserX className="h-3 w-3" />
+                                                Not Verified
+                                            </Badge>
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                                    <p className="text-sm">
+                                        {new Date(user.created_at).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                                    <p className="text-sm">
+                                        {new Date(user.updated_at).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </p>
+                                </div>
+
+                                {user.last_login_at && (
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Last Login</label>
+                                        <p className="text-sm">
+                                            {new Date(user.last_login_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
+                                        </p>
+                                        {user.last_login_ip && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                IP: {user.last_login_ip}
+                                                {user.last_login_location && ` • ${user.last_login_location}`}
+                                                {user.last_login_device && ` • ${user.last_login_device}`}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
 
-                {/* Quick Actions */}
+                {/* Actions */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-3">
+                    <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <Button
-                                onClick={() => router.visit(route('drivers.edit', driver.id))}
-                                className="flex items-center"
+                                onClick={() => router.visit(route('drivers.edit', user.id))}
+                                className="flex items-center justify-center gap-2"
                             >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Driver
+                                <Edit className="h-4 w-4" />
+                                Edit User
                             </Button>
-                            
-                            {driver.phone && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => window.open(`tel:${driver.phone}`)}
-                                    className="flex items-center"
-                                >
-                                    <Phone className="mr-2 h-4 w-4" />
-                                    Call Driver
-                                </Button>
-                            )}
-                            
-                            {driver.whatsapp_id && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => window.open(`https://wa.me/${driver.whatsapp_id.replace(/[^0-9]/g, '')}`)}
-                                    className="flex items-center"
-                                >
-                                    <Phone className="mr-2 h-4 w-4" />
-                                    WhatsApp
-                                </Button>
-                            )}
-                            
                             <Button
                                 variant="destructive"
                                 onClick={handleDelete}
-                                className="flex items-center"
+                                className="flex items-center justify-center gap-2"
                             >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Driver
+                                <Trash2 className="h-4 w-4" />
+                                Delete User
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => window.print()}
+                                className="flex items-center justify-center gap-2"
+                            >
+                                <FileText className="h-4 w-4" />
+                                Print Profile
                             </Button>
                         </div>
                     </CardContent>

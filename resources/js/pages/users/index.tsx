@@ -15,6 +15,7 @@ interface User {
     user_type: string;
     department: { name: string } | null;
     status: string;
+    area: string | null;
     roles: Array<{ name: string }>;
     is_driver: boolean;
     driver_status: string | null;
@@ -140,6 +141,16 @@ export default function UsersIndex({
             render: (value) => (
                 <span className="text-sm">
                     {value?.name || 'No Department'}
+                </span>
+            ),
+        },
+        {
+            key: 'area',
+            label: 'Area',
+            sortable: true,
+            render: (value) => (
+                <span className="text-sm text-muted-foreground">
+                    {value || '-'}
                 </span>
             ),
         },

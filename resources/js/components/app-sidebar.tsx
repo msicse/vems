@@ -1,10 +1,10 @@
-import { NavFooter } from '@/components/nav-footer';
+
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, Car, Folder, LayoutGrid, Package, Users, UserCheck, Shield, Key, Route, Briefcase } from 'lucide-react';
+import { Building2, Car, LayoutGrid, Users, UserCheck, Shield, Key, Route, Briefcase, MapPin, Factory, UsersRound } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -38,6 +38,11 @@ const mainNavItems: NavItem[] = [
         href: '/drivers',
         icon: UserCheck,
     },
+    {
+        title: 'User Groups',
+        href: '/user-groups',
+        icon: UsersRound,
+    },
 
 
     // {
@@ -51,6 +56,17 @@ const mainNavItems: NavItem[] = [
         icon: Building2,
     },
     {
+        title: 'Factories',
+        href: '/factories',
+        icon: Factory,
+    },
+
+    {
+        title: 'Logistics',
+        href: '/logistics',
+        icon: Briefcase,
+    },
+    {
         title: 'Vehicles',
         href: '/vehicles',
         icon: Car,
@@ -59,6 +75,11 @@ const mainNavItems: NavItem[] = [
         title: 'Routes',
         href: '/routes',
         icon: Route,
+    },
+    {
+        title: 'Trips',
+        href: '/trips',
+        icon: MapPin,
     },
 
 ];

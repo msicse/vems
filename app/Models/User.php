@@ -46,6 +46,7 @@ class User extends Authenticatable
         'probation_end_date',
         'present_address',
         'permanent_address',
+        'area',
         'photo',
         'total_distance_covered',
         'total_trips_completed',
@@ -124,11 +125,6 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\VehicleDriverAssignment::class, 'driver_id');
     }
 
-    public function driverTrips(): HasMany
-    {
-        return $this->hasMany(Trip::class, 'driver_id');
-    }
-
     public function requestedTrips(): HasMany
     {
         return $this->hasMany(Trip::class, 'requested_by');
@@ -139,14 +135,14 @@ class User extends Authenticatable
         return $this->hasMany(Trip::class, 'approved_by');
     }
 
-    public function fuelLogs(): HasMany
+    public function driverTrips(): HasMany
     {
-        return $this->hasMany(FuelLog::class, 'filled_by');
+        return $this->hasMany(Trip::class, 'driver_id');
     }
 
-    public function tripCheckpoints(): HasMany
+    public function tripPassengers(): HasMany
     {
-        return $this->hasMany(TripCheckpoint::class);
+        return $this->hasMany(TripPassenger::class);
     }
 
     // Scopes

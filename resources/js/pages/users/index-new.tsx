@@ -3,7 +3,7 @@ import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, ColumnFilter, DataTableColumn } from '@/types';
+import { BreadcrumbItem, DataTableColumn } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Edit, Eye, Plus, Trash2, Shield, User, Mail } from 'lucide-react';
 
@@ -213,9 +213,6 @@ export default function UsersIndex({
         },
     ];
 
-    // Define filters - simplified for better compatibility
-    const filters: ColumnFilter[] = [];
-
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
@@ -272,7 +269,6 @@ export default function UsersIndex({
                     columns={columns}
                     queryParams={queryParams}
                     filterOptions={filterOptions}
-                    filters={filters}
                     searchPlaceholder="Search users..."
                     exportable={true}
                     onRowClick={handleRowClick}

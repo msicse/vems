@@ -3,7 +3,7 @@ import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, ColumnFilter, DataTableColumn, Vehicle } from '@/types';
+import { BreadcrumbItem, DataTableColumn, Vehicle } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Edit, Eye, Plus, Trash2 } from 'lucide-react';
 
@@ -22,6 +22,10 @@ interface VehiclesPageProps {
     filterOptions: {
         brands: string[];
         colors: string[];
+        vehicle_types: Array<{ label: string; value: string }>;
+        rental_types: Array<{ label: string; value: string }>;
+        fuel_types: Array<{ label: string; value: string }>;
+        vendors: Array<{ label: string; value: string }>;
         statuses: Array<{ label: string; value: boolean }>;
     };
     stats: {
@@ -34,7 +38,7 @@ interface VehiclesPageProps {
         search?: string;
         sort?: string;
         direction?: 'asc' | 'desc';
-        filters?: Record<string, any>;
+        filters?: Record<string, unknown>;
         per_page?: number;
     };
 }
@@ -60,11 +64,15 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
 
         console.log('Manual sort clicked:', { field, newDirection });
 
-        router.get(route('vehicles.index'), {
-            ...queryParams,
+        const params: Record<string, string | number | undefined> = {
             sort: field,
             direction: newDirection,
-        }, {
+        };
+
+        if (queryParams?.search) params.search = queryParams.search;
+        if (queryParams?.per_page) params.per_page = queryParams.per_page;
+
+        router.get(route('vehicles.index'), params, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -80,7 +88,6 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
             key: 'brand',
             label: 'Brand',
             sortable: true,
-            filterable: true,
             render: (value) => (
                 <span className="font-medium">{value}</span>
             ),
@@ -97,7 +104,6 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
             key: 'color',
             label: 'Color',
             sortable: true,
-            filterable: true,
             render: (value) => (
                 <Badge variant="outline" className="capitalize">
                     {value}
@@ -116,11 +122,11 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
             key: 'vendor',
             label: 'Vendor',
             sortable: true,
-            render: (value, vehicle) => {
+            render: (value) => {
                 // Handle both the vendor object and the legacy vendor string
-                const vendorName = typeof value === 'object' && value?.name
+                const vendorName = typeof value === 'object' && value !== null && 'name' in value
                     ? value.name
-                    : vehicle.vendor?.name || (typeof value === 'string' ? value : null);
+                    : (typeof value === 'string' ? value : null);
 
                 return (
                     <span className="text-muted-foreground">
@@ -156,7 +162,6 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
             key: 'is_active',
             label: 'Status',
             sortable: true,
-            filterable: true,
             render: (value) => (
                 <Badge variant={value ? 'default' : 'secondary'}>
                     {value ? 'Active' : 'Inactive'}
@@ -188,6 +193,7 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
                             router.visit(route('vehicles.show', row.id));
                         }}
                         title="View vehicle"
+                        className="cursor-pointer"
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
@@ -199,6 +205,7 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
                             router.visit(route('vehicles.edit', row.id));
                         }}
                         title="Edit vehicle"
+                        className="cursor-pointer"
                     >
                         <Edit className="h-4 w-4" />
                     </Button>
@@ -214,7 +221,7 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
                             }
                         }}
                         title="Delete vehicle"
-                        className="text-destructive hover:text-destructive"
+                        className="cursor-pointer text-destructive hover:text-destructive"
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>
@@ -224,7 +231,12 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
     ];
 
     // Define filters
-    const filters: ColumnFilter[] = [
+    const filters: Array<{
+        key: string;
+        label: string;
+        type: string;
+        options: Array<{ label: string; value: string | boolean }>;
+    }> = [
         {
             key: 'brand',
             label: 'Brand',
@@ -241,6 +253,42 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
             options: filterOptions.colors.map((color) => ({
                 label: color.charAt(0).toUpperCase() + color.slice(1),
                 value: color,
+            })),
+        },
+        {
+            key: 'vehicle_type',
+            label: 'Vehicle Type',
+            type: 'multiselect',
+            options: filterOptions.vehicle_types.map((type) => ({
+                label: type.label,
+                value: type.value,
+            })),
+        },
+        {
+            key: 'rental_type',
+            label: 'Rental Type',
+            type: 'multiselect',
+            options: filterOptions.rental_types.map((type) => ({
+                label: type.label,
+                value: type.value,
+            })),
+        },
+        {
+            key: 'fuel_type',
+            label: 'Fuel Type',
+            type: 'multiselect',
+            options: filterOptions.fuel_types.map((type) => ({
+                label: type.label,
+                value: type.value,
+            })),
+        },
+        {
+            key: 'vendor_id',
+            label: 'Service Provider',
+            type: 'multiselect',
+            options: filterOptions.vendors.map((vendor) => ({
+                label: vendor.label,
+                value: vendor.value,
             })),
         },
         {
@@ -311,15 +359,6 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
                     onRowClick={handleRowClick}
                     emptyMessage="No vehicles found. Add your first vehicle to get started."
                 />
-
-                {/* Debug Info */}
-                <div className="mt-4 p-4 bg-gray-100 rounded">
-                    <h3 className="font-bold">Debug Info:</h3>
-                    <p>Current Sort: {queryParams?.sort || 'none'}</p>
-                    <p>Direction: {queryParams?.direction || 'none'}</p>
-                    <p>Total Records: {vehicles?.total || 0}</p>
-                    <p>Current Page: {vehicles?.current_page || 1}</p>
-                </div>
             </div>
         </AppSidebarLayout>
     );

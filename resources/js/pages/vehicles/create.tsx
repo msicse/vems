@@ -3,7 +3,6 @@ import { PageHeader } from '@/base-components/page-header';
 import { Button } from '@/components/ui/button';
 import { SearchableSelect } from '@/components/searchable-select';
 import { FormDateField } from '@/components/date-picker';
-import { useFlashMessage } from '@/components/flash-messages';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, Vendor, User } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
@@ -19,10 +18,17 @@ type VehicleForm = {
     model: string;
     color: string;
     registration_number: string;
+    vehicle_type: string;
+    rental_type: string;
+    capacity: string;
     vendor: string;
     vendor_id: string;
     driver_id: string;
     is_active: boolean;
+    // Parking Location
+    parking_address: string;
+    parking_latitude: string;
+    parking_longitude: string;
     // Tax Token
     tax_token_last_date: string;
     tax_token_number: string;
@@ -60,16 +66,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehicleProps) {
-    const { showSuccess, showError } = useFlashMessage();
     const { data, setData, post, processing, errors } = useForm<VehicleForm>({
         brand: '',
         model: '',
         color: '',
         registration_number: '',
+        vehicle_type: 'sedan',
+        rental_type: 'own',
+        capacity: '',
         vendor: '',
         vendor_id: 'none',
         driver_id: 'none',
         is_active: true,
+        // Parking Location
+        parking_address: '',
+        parking_latitude: '',
+        parking_longitude: '',
         // Simplified for now - other fields temporarily removed
         tax_token_last_date: '',
         tax_token_number: '',
@@ -98,53 +110,8 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Form submission
-
-        // Transform the data before submission
-        const transformedData = {
-            brand: data.brand,
-            model: data.model,
-            color: data.color || null, // Color is now optional
-            registration_number: data.registration_number,
-            vendor: data.vendor || null,
-            vendor_id: data.vendor_id === 'none' ? null : data.vendor_id,
-            driver_id: data.driver_id === 'none' ? null : data.driver_id, // Required driver
-            is_active: data.is_active,
-            tax_token_last_date: data.tax_token_last_date || null,
-            tax_token_number: data.tax_token_number || null,
-            fitness_certificate_last_date: data.fitness_certificate_last_date || null,
-            fitness_certificate_number: data.fitness_certificate_number || null,
-            insurance_type: data.insurance_type === 'none' ? null : data.insurance_type,
-            insurance_last_date: data.insurance_last_date || null,
-            insurance_policy_number: data.insurance_policy_number || null,
-            insurance_company: data.insurance_company || null,
-            registration_certificate_number: data.registration_certificate_number || null,
-            owner_name: data.owner_name || null,
-            owner_address: data.owner_address || null,
-            owner_phone: data.owner_phone || null,
-            owner_email: data.owner_email || null,
-            owner_nid: data.owner_nid || null,
-            manufacture_year: data.manufacture_year ? parseInt(data.manufacture_year) : null,
-            engine_number: data.engine_number || null,
-            chassis_number: data.chassis_number || null,
-            fuel_type: data.fuel_type === 'none' ? null : data.fuel_type,
-            tax_token_alert_enabled: data.tax_token_alert_enabled,
-            fitness_alert_enabled: data.fitness_alert_enabled,
-            insurance_alert_enabled: data.insurance_alert_enabled,
-            alert_days_before: data.alert_days_before ? parseInt(data.alert_days_before) : 30,
-        };
-
-
-
-        // Submit using the standard Inertia post method - Laravel flash messages will handle success
-        post(route('vehicles.store'), transformedData, {
-            onError: (errors) => {
-                // Only show programmatic error if no validation errors (server error)
-                if (Object.keys(errors).length === 0) {
-                    showError('Failed to create vehicle. Please try again.');
-                }
-            }
-        });
+        // Submit the form - backend will handle the 'none' values
+        post(route('vehicles.store'));
     };
 
     const statusOptions = [
@@ -155,7 +122,7 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
     const driverOptions = [
         { label: 'Select Driver', value: 'none' },
         ...drivers.map(driver => ({
-            label: `${driver.name} • ${driver.official_phone || driver.email}`,
+            label: `${driver.name} • ${driver.email}`,
             value: driver.id.toString()
         }))
     ];
@@ -174,6 +141,25 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
         { label: 'CNG', value: 'cng' },
         { label: 'Electric', value: 'electric' },
         { label: 'Hybrid', value: 'hybrid' },
+    ];
+
+    const vehicleTypeOptions = [
+        { label: 'Sedan', value: 'sedan' },
+        { label: 'SUV', value: 'suv' },
+        { label: 'Van', value: 'van' },
+        { label: 'Microbus', value: 'microbus' },
+        { label: 'Coaster', value: 'coaster' },
+        { label: 'Bus', value: 'bus' },
+        { label: 'Pickup', value: 'pickup' },
+        { label: 'Truck', value: 'truck' },
+        { label: 'Other', value: 'other' },
+    ];
+
+    const rentalTypeOptions = [
+        { label: 'Own (Company Owned)', value: 'own' },
+        { label: 'Pool (Shared Vehicle)', value: 'pool' },
+        { label: 'Ad-hoc Rental', value: 'adhoc' },
+        { label: 'Support Vehicle', value: 'support' },
     ];
 
     const vendorOptions = [
@@ -248,13 +234,44 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                         placeholder="ABC-123"
                                     />
 
+                                    <FormSelect
+                                        label="Vehicle Type"
+                                        name="vehicle_type"
+                                        value={data.vehicle_type}
+                                        onChange={(value) => setData('vehicle_type', value)}
+                                        options={vehicleTypeOptions}
+                                        error={errors.vehicle_type || undefined}
+                                        required
+                                    />
+
+                                    <FormSelect
+                                        label="Rental Type"
+                                        name="rental_type"
+                                        value={data.rental_type}
+                                        onChange={(value) => setData('rental_type', value)}
+                                        options={rentalTypeOptions}
+                                        error={errors.rental_type || undefined}
+                                        required
+                                    />
+
+                                    <FormField
+                                        label="Capacity (Seats)"
+                                        name="capacity"
+                                        type="number"
+                                        value={data.capacity}
+                                        onChange={(value) => setData('capacity', value)}
+                                        error={errors.capacity || undefined}
+                                        placeholder="e.g., 4, 7, 15"
+                                    />
+
                                     <SearchableSelect
                                         label="Service Provider"
                                         name="vendor_id"
                                         value={data.vendor_id}
-                                        onChange={(value) => setData('vendor_id', value === 'none' ? null : value)}
+                                        onChange={(value) => setData('vendor_id', value)}
                                         options={vendorOptions}
                                         error={errors.vendor_id || undefined}
+                                        required
                                         placeholder="Select vendor..."
                                     />
 
@@ -262,7 +279,7 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                         label="Driver"
                                         name="driver_id"
                                         value={data.driver_id}
-                                        onChange={(value) => setData('driver_id', value === 'none' ? null : value)}
+                                        onChange={(value) => setData('driver_id', value)}
                                         options={driverOptions}
                                         error={errors.driver_id || undefined}
                                         required
@@ -284,6 +301,43 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                 </div>
                             </div>
 
+                            {/* Parking Location */}
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">Parking Location</h3>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="sm:col-span-2">
+                                        <FormField
+                                            label="Parking Address"
+                                            name="parking_address"
+                                            value={data.parking_address}
+                                            onChange={(value) => setData('parking_address', value)}
+                                            error={errors.parking_address || undefined}
+                                            placeholder="Bay A, Gulshan Parking, Dhaka"
+                                        />
+                                    </div>
+
+                                    <FormField
+                                        label="Latitude"
+                                        name="parking_latitude"
+                                        type="number"
+                                        value={data.parking_latitude}
+                                        onChange={(value) => setData('parking_latitude', value)}
+                                        error={errors.parking_latitude || undefined}
+                                        placeholder="23.7809"
+                                    />
+
+                                    <FormField
+                                        label="Longitude"
+                                        name="parking_longitude"
+                                        type="number"
+                                        value={data.parking_longitude}
+                                        onChange={(value) => setData('parking_longitude', value)}
+                                        error={errors.parking_longitude || undefined}
+                                        placeholder="90.4163"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Additional Vehicle Details */}
                             <div>
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">Vehicle Details</h3>
@@ -296,15 +350,13 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                         onChange={(value) => setData('manufacture_year', value)}
                                         error={errors.manufacture_year || undefined}
                                         placeholder="e.g., 2020"
-                                        min="1900"
-                                        max={new Date().getFullYear() + 1}
                                     />
 
                                     <FormSelect
-                                        label="Fuel Type"
+                                        label="Fuel Type (Optional)"
                                         name="fuel_type"
                                         value={data.fuel_type}
-                                        onChange={(value) => setData('fuel_type', value === 'none' ? null : value)}
+                                        onChange={(value) => setData('fuel_type', value)}
                                         options={fuelTypeOptions}
                                         error={errors.fuel_type || undefined}
                                     />
@@ -376,10 +428,10 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">Insurance</h3>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                     <FormSelect
-                                        label="Insurance Type"
+                                        label="Insurance Type (Optional)"
                                         name="insurance_type"
                                         value={data.insurance_type}
-                                        onChange={(value) => setData('insurance_type', value === 'none' ? null : value)}
+                                        onChange={(value) => setData('insurance_type', value)}
                                         options={insuranceTypeOptions}
                                         error={errors.insurance_type || undefined}
                                     />
@@ -490,8 +542,6 @@ export default function CreateVehicle({ vendors = [], drivers = [] }: CreateVehi
                                         onChange={(value) => setData('alert_days_before', value)}
                                         error={errors.alert_days_before || undefined}
                                         placeholder="30 days"
-                                        min="1"
-                                        max="365"
                                     />
 
                                     <div className="flex items-center space-x-2">

@@ -204,6 +204,25 @@ export default function ShowUser({ user }: ShowUserProps) {
                                             </p>
                                         </div>
                                     )}
+
+                                    {user.probation_end_date && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Probation End Date</label>
+                                            </div>
+                                            <p className="text-sm">
+                                                {new Date(user.probation_end_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                                {new Date(user.probation_end_date) > new Date() && (
+                                                    <Badge variant="secondary" className="ml-2">On Probation</Badge>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -327,6 +346,16 @@ export default function ShowUser({ user }: ShowUserProps) {
                             <div className="space-y-4">
                                 <h4 className="text-sm font-medium text-muted-foreground border-b pb-2">Address Information</h4>
                                 <div className="grid grid-cols-1 gap-4">
+                                    {user.area && (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center space-x-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <label className="text-sm font-medium text-muted-foreground">Area/Location</label>
+                                            </div>
+                                            <p className="text-sm font-medium">{user.area}</p>
+                                        </div>
+                                    )}
+
                                     {user.present_address && (
                                         <div className="space-y-1">
                                             <div className="flex items-center space-x-2">
@@ -392,6 +421,19 @@ export default function ShowUser({ user }: ShowUserProps) {
                                         <div>
                                             <label className="text-sm font-medium text-muted-foreground">License Class</label>
                                             <p className="text-sm font-mono">{user.license_class}</p>
+                                        </div>
+                                    )}
+
+                                    {user.license_issue_date && (
+                                        <div>
+                                            <label className="text-sm font-medium text-muted-foreground">License Issue Date</label>
+                                            <p className="text-sm">
+                                                {new Date(user.license_issue_date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                            </p>
                                         </div>
                                     )}
 

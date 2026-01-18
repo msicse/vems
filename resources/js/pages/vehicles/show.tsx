@@ -87,7 +87,11 @@ export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehiclePr
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Vendor / Service Provider</label>
-                                    <p className="text-sm">{vehicle.vendor?.name || vehicle.vendor || 'N/A'}</p>
+                                    <p className="text-sm">
+                                        {typeof vehicle.vendor === 'object' && vehicle.vendor !== null
+                                            ? vehicle.vendor.name
+                                            : (vehicle.vendor || 'N/A')}
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Status</label>
@@ -292,25 +296,29 @@ export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehiclePr
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Created At</label>
                                     <p className="text-sm">
-                                        {new Date(vehicle.created_at).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
+                                        {vehicle.created_at
+                                            ? new Date(vehicle.created_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })
+                                            : 'N/A'}
                                     </p>
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
                                     <p className="text-sm">
-                                        {new Date(vehicle.updated_at).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
+                                        {vehicle.updated_at
+                                            ? new Date(vehicle.updated_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })
+                                            : 'N/A'}
                                     </p>
                                 </div>
                             </div>
@@ -318,7 +326,7 @@ export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehiclePr
                     </Card>
 
                     {/* Vendor / Service Provider Information */}
-                    {vehicle.vendor && (
+                    {vehicle.vendor && typeof vehicle.vendor === 'object' && 'name' in vehicle.vendor && (
                         <Card className="lg:col-span-2">
                             <CardHeader>
                                 <CardTitle>Vendor / Service Provider Information</CardTitle>
@@ -332,8 +340,7 @@ export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehiclePr
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Status</label>
                                         <Badge variant={vehicle.vendor.status === 'active' ? 'default' : 'secondary'}>
-                                            {vehicle.vendor.status === 'active' ? 'Active' : 'Inactive'}
-                                        </Badge>
+                                            {vehicle.vendor.status === 'active' ? 'Active' : 'Inactive'}</Badge>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Phone</label>
@@ -370,7 +377,7 @@ export default function ShowVehicle({ vehicle, assignments = [] }: ShowVehiclePr
                                     <div className="mt-6">
                                         <h4 className="text-sm font-medium text-muted-foreground mb-3">Contact Persons</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {vehicle.vendor.contact_persons.map((contact, index) => (
+                                            {vehicle.vendor.contact_persons.map((contact) => (
                                                 <div key={contact.id} className="border rounded-lg p-4">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <h5 className="font-medium">{contact.name}</h5>

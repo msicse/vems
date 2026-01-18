@@ -15,6 +15,10 @@ class VehicleController extends Controller
     public function index(VehicleIndexRequest $request)
     {
         $validated = $request->validated();
+
+        // Debug: Log filters
+        \Log::info('Vehicle Index Filters:', ['filters' => $validated['filters'] ?? []]);
+
         $query = Vehicle::with(['vendor', 'driver']);
 
         // Apply search
@@ -48,7 +52,23 @@ class VehicleController extends Controller
                 $query->whereIn('color', $filters['color']);
             }
 
-            if (isset($filters['is_active'])) {
+            if (!empty($filters['vehicle_type'])) {
+                $query->whereIn('vehicle_type', $filters['vehicle_type']);
+            }
+
+            if (!empty($filters['rental_type'])) {
+                $query->whereIn('rental_type', $filters['rental_type']);
+            }
+
+            if (!empty($filters['fuel_type'])) {
+                $query->whereIn('fuel_type', $filters['fuel_type']);
+            }
+
+            if (!empty($filters['vendor_id'])) {
+                $query->whereIn('vendor_id', $filters['vendor_id']);
+            }
+
+            if (isset($filters['is_active']) && !empty($filters['is_active'])) {
                 $query->whereIn('is_active', $filters['is_active']);
             }
         }
@@ -66,6 +86,35 @@ class VehicleController extends Controller
         $filterOptions = [
             'brands' => Vehicle::distinct()->pluck('brand')->filter()->sort()->values(),
             'colors' => Vehicle::distinct()->pluck('color')->filter()->sort()->values(),
+            'vehicle_types' => [
+                ['label' => 'Sedan', 'value' => 'sedan'],
+                ['label' => 'SUV', 'value' => 'suv'],
+                ['label' => 'Van', 'value' => 'van'],
+                ['label' => 'Microbus', 'value' => 'microbus'],
+                ['label' => 'Coaster', 'value' => 'coaster'],
+                ['label' => 'Bus', 'value' => 'bus'],
+                ['label' => 'Pickup', 'value' => 'pickup'],
+                ['label' => 'Truck', 'value' => 'truck'],
+                ['label' => 'Other', 'value' => 'other'],
+            ],
+            'rental_types' => [
+                ['label' => 'Own', 'value' => 'own'],
+                ['label' => 'Pool', 'value' => 'pool'],
+                ['label' => 'Rental', 'value' => 'rental'],
+                ['label' => 'Adhoc', 'value' => 'adhoc'],
+                ['label' => 'Support', 'value' => 'support'],
+            ],
+            'fuel_types' => [
+                ['label' => 'Petrol', 'value' => 'petrol'],
+                ['label' => 'Diesel', 'value' => 'diesel'],
+                ['label' => 'CNG', 'value' => 'cng'],
+                ['label' => 'Electric', 'value' => 'electric'],
+                ['label' => 'Hybrid', 'value' => 'hybrid'],
+            ],
+            'vendors' => \App\Models\Vendor::select('id', 'name')->orderBy('name')->get()->map(fn($v) => [
+                'label' => $v->name,
+                'value' => (string)$v->id,
+            ]),
             'statuses' => [
                 ['label' => 'Active', 'value' => true],
                 ['label' => 'Inactive', 'value' => false],
@@ -125,15 +174,30 @@ class VehicleController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate the incoming request data
+        // Transform 'none' values to null before validation
+        $data = $request->all();
+        $data['fuel_type'] = ($data['fuel_type'] ?? null) === 'none' ? null : ($data['fuel_type'] ?? null);
+        $data['insurance_type'] = ($data['insurance_type'] ?? null) === 'none' ? null : ($data['insurance_type'] ?? null);
+        $data['vendor_id'] = ($data['vendor_id'] ?? null) === 'none' ? null : ($data['vendor_id'] ?? null);
+        $data['driver_id'] = ($data['driver_id'] ?? null) === 'none' ? null : ($data['driver_id'] ?? null);
 
+        // Merge transformed data back to request
+        $request->merge($data);
+
+        // Validate the incoming request data
         $validated = $request->validate([
             'brand' => 'required|string|max:255',
             'model' => 'required|string|max:255',
             'color' => 'nullable|string|max:255', // Made optional
             'registration_number' => 'required|string|max:255|unique:vehicles',
+            'vehicle_type' => 'required|in:sedan,suv,van,microbus,coaster,bus,pickup,truck,other',
+            'rental_type' => 'required|in:own,pool,rental,adhoc,support',
+            'capacity' => 'nullable|integer|min:1',
+            'parking_address' => 'nullable|string',
+            'parking_latitude' => 'nullable|numeric|between:-90,90',
+            'parking_longitude' => 'nullable|numeric|between:-180,180',
             'vendor' => 'nullable|string|max:255', // Keep for backward compatibility
-            'vendor_id' => 'nullable|string',
+            'vendor_id' => 'required|exists:vendors,id', // Required service provider
             'driver_id' => 'required|exists:users,id', // Required driver
             'is_active' => 'boolean',
             // Tax Token
@@ -167,15 +231,6 @@ class VehicleController extends Controller
         ]);
 
         \Log::info('Validated data:', $validated);
-
-        // Convert empty vendor_id to null and validate if it's a valid vendor
-        if (!empty($validated['vendor_id']) && $validated['vendor_id'] !== 'none') {
-            $request->validate([
-                'vendor_id' => 'exists:vendors,id'
-            ]);
-        } else {
-            $validated['vendor_id'] = null;
-        }
 
         // Set default values for boolean fields if not present
         $validated['tax_token_alert_enabled'] = $validated['tax_token_alert_enabled'] ?? true;
@@ -251,13 +306,29 @@ class VehicleController extends Controller
      */
     public function update(Request $request, Vehicle $vehicle)
     {
+        // Transform 'none' values to null before validation
+        $data = $request->all();
+        $data['fuel_type'] = ($data['fuel_type'] ?? null) === 'none' ? null : ($data['fuel_type'] ?? null);
+        $data['insurance_type'] = ($data['insurance_type'] ?? null) === 'none' ? null : ($data['insurance_type'] ?? null);
+        $data['vendor_id'] = ($data['vendor_id'] ?? null) === 'none' ? null : ($data['vendor_id'] ?? null);
+        $data['driver_id'] = ($data['driver_id'] ?? null) === 'none' ? null : ($data['driver_id'] ?? null);
+
+        // Merge transformed data back to request
+        $request->merge($data);
+
         $validated = $request->validate([
             'brand' => 'required|string|max:255',
             'model' => 'required|string|max:255',
             'color' => 'nullable|string|max:255', // Made optional
             'registration_number' => 'required|string|max:255|unique:vehicles,registration_number,' . $vehicle->id,
+            'vehicle_type' => 'required|in:sedan,suv,van,microbus,coaster,bus,pickup,truck,other',
+            'rental_type' => 'required|in:own,pool,rental,adhoc,support',
+            'capacity' => 'nullable|integer|min:1',
+            'parking_address' => 'nullable|string',
+            'parking_latitude' => 'nullable|numeric|between:-90,90',
+            'parking_longitude' => 'nullable|numeric|between:-180,180',
             'vendor' => 'nullable|string|max:255', // Keep for backward compatibility
-            'vendor_id' => 'nullable|string',
+            'vendor_id' => 'required|exists:vendors,id', // Required service provider
             'driver_id' => 'required|exists:users,id', // Required driver
             'is_active' => 'boolean',
             // Tax Token
@@ -289,15 +360,6 @@ class VehicleController extends Controller
             'insurance_alert_enabled' => 'boolean',
             'alert_days_before' => 'nullable|integer|min:1|max:365',
         ]);
-
-        // Convert empty vendor_id to null and validate if it's a valid vendor
-        if (!empty($validated['vendor_id']) && $validated['vendor_id'] !== 'none') {
-            $request->validate([
-                'vendor_id' => 'exists:vendors,id'
-            ]);
-        } else {
-            $validated['vendor_id'] = null;
-        }
 
         $vehicle->update($validated);
 

@@ -48,6 +48,7 @@ return new class extends Migration {
             $table->date('probation_end_date')->nullable();
 
             // Address Information
+            $table->string('area')->nullable();
             $table->text('present_address')->nullable();
             $table->text('permanent_address')->nullable();
 

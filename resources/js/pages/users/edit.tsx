@@ -44,6 +44,7 @@ type UserForm = {
   emergency_contact_relation: string;
   present_address: string;
   permanent_address: string;
+  area: string;
   blood_group: string;
   nid_number: string;
   passport_number: string;
@@ -115,6 +116,7 @@ export default function EditUser({ user, departments, roles, userRoles, userType
     emergency_contact_relation: (user.emergency_contact_relation as string) || '',
     present_address: (user.present_address as string) || '',
     permanent_address: (user.permanent_address as string) || '',
+    area: (user.area as string) || '',
     blood_group: (user.blood_group as string) || '',
     nid_number: (user.nid_number as string) || '',
     passport_number: (user.passport_number as string) || '',
@@ -433,25 +435,36 @@ export default function EditUser({ user, departments, roles, userRoles, userType
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-muted-foreground">Address Information</h4>
                   <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-                    <FormTextarea
-                      label="Present Address"
-                      name="present_address"
-                      value={data.present_address}
-                      onChange={(value) => handleFieldChange('present_address', value)}
-                      error={errors.present_address}
-                      placeholder="Enter current address"
-                      rows={2}
+                    <FormField
+                      label="Area/Location"
+                      name="area"
+                      value={data.area}
+                      onChange={(value) => handleFieldChange('area', value)}
+                      error={errors.area}
+                      placeholder="e.g., Gulshan, Mohakhali, Banani"
                     />
 
-                    <FormTextarea
-                      label="Permanent Address"
-                      name="permanent_address"
-                      value={data.permanent_address}
-                      onChange={(value) => handleFieldChange('permanent_address', value)}
-                      error={errors.permanent_address}
-                      placeholder="Enter permanent address"
-                      rows={2}
-                    />
+                    <div className="md:col-span-2 grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                      <FormTextarea
+                        label="Present Address"
+                        name="present_address"
+                        value={data.present_address}
+                        onChange={(value) => handleFieldChange('present_address', value)}
+                        error={errors.present_address}
+                        placeholder="Enter current address"
+                        rows={2}
+                      />
+
+                      <FormTextarea
+                        label="Permanent Address"
+                        name="permanent_address"
+                        value={data.permanent_address}
+                        onChange={(value) => handleFieldChange('permanent_address', value)}
+                        error={errors.permanent_address}
+                        placeholder="Enter permanent address"
+                        rows={2}
+                      />
+                    </div>
                   </div>
                 </div>
 

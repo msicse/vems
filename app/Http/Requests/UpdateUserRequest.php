@@ -12,25 +12,26 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $user = auth()->user();
+        $currentUser = auth()->user();
+        $userBeingUpdated = $this->route('user') ?? $this->route('driver');
 
         // Allow Super Admin role (via AppServiceProvider Gate)
-        if ($user->hasRole('super-admin')) {
+        if ($currentUser->hasRole('super-admin')) {
             return true;
         }
 
         // Allow admin user type
-        if ($user->user_type === 'admin') {
+        if ($currentUser->user_type === 'admin') {
             return true;
         }
 
         // Allow users to edit their own profile (basic fields only)
-        if ($this->route('user')->id === $user->id) {
+        if ($userBeingUpdated && $userBeingUpdated->id === $currentUser->id) {
             return true;
         }
 
         // Check for edit-users permission (if it exists)
-        return $user->can('edit-users');
+        return $currentUser->can('edit-users');
     }
 
     /**
@@ -38,7 +39,9 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('user')->id;
+        // Check for both 'user' and 'driver' route parameters
+        $user = $this->route('user') ?? $this->route('driver');
+        $userId = $user->id;
 
         return [
             // Basic Information
@@ -49,8 +52,8 @@ class UpdateUserRequest extends FormRequest
 
             // Contact Information
             'official_phone' => ['nullable', 'string', 'max:20'],
-            'personal_phone' => ['nullable', 'string', 'max:20'],
-            'whatsapp_id' => ['nullable', 'string', 'max:50'],
+            'personal_phone' => ['required', 'string', 'max:20'],
+            'whatsapp_id' => ['required', 'string', 'max:50'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_relation' => ['nullable', 'string', 'max:100'],
             'emergency_phone' => ['nullable', 'string', 'max:20'],
@@ -64,9 +67,9 @@ class UpdateUserRequest extends FormRequest
             'license_expiry_date' => ['nullable', 'date', 'after:license_issue_date'],
 
             // User Classification
-            'user_type' => ['required', 'string', 'in:employee,driver,transport_manager,admin'],
+            'user_type' => ['nullable', 'string', 'in:employee,driver,transport_manager,admin'],
             'department_id' => ['nullable', 'exists:departments,id'],
-            'roles' => ['required', 'array', 'min:1'],
+            'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,id'],
             'blood_group' => ['nullable', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'status' => ['required', 'string', 'in:active,inactive,suspended'],
@@ -135,9 +138,9 @@ class UpdateUserRequest extends FormRequest
 
             // Prevent admin users from changing their own user_type
             $currentUser = auth()->user();
-            $userBeingUpdated = $this->route('user');
+            $userBeingUpdated = $this->route('user') ?? $this->route('driver');
 
-            if ($currentUser->id === $userBeingUpdated->id &&
+            if ($userBeingUpdated && $currentUser->id === $userBeingUpdated->id &&
                 $currentUser->user_type === 'admin' &&
                 $this->user_type !== 'admin') {
                 $validator->errors()->add('user_type', 'You cannot change your own admin user type.');

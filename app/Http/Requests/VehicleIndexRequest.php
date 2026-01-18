@@ -31,8 +31,16 @@ class VehicleIndexRequest extends FormRequest
             'filters.brand.*' => ['string'],
             'filters.color' => ['nullable', 'array'],
             'filters.color.*' => ['string'],
+            'filters.vehicle_type' => ['nullable', 'array'],
+            'filters.vehicle_type.*' => ['string'],
+            'filters.rental_type' => ['nullable', 'array'],
+            'filters.rental_type.*' => ['string'],
+            'filters.fuel_type' => ['nullable', 'array'],
+            'filters.fuel_type.*' => ['string'],
+            'filters.vendor_id' => ['nullable', 'array'],
+            'filters.vendor_id.*' => ['string'],
             'filters.is_active' => ['nullable', 'array'],
-            'filters.is_active.*' => ['boolean'],
+            'filters.is_active.*' => ['nullable'],
             'format' => ['nullable', 'string', 'in:csv,xlsx,pdf'],
             'template_id' => ['nullable', 'integer', 'exists:export_templates,id'],
         ];
@@ -49,6 +57,22 @@ class VehicleIndexRequest extends FormRequest
         $validated['sort'] = $validated['sort'] ?? 'id';
         $validated['direction'] = $validated['direction'] ?? 'desc';
         $validated['per_page'] = $validated['per_page'] ?? 15;
+
+        // Convert is_active filter values to proper boolean
+        if (isset($validated['filters']['is_active']) && is_array($validated['filters']['is_active'])) {
+            $validated['filters']['is_active'] = array_map(function($value) {
+                if (is_bool($value)) {
+                    return $value;
+                }
+                if ($value === 'true' || $value === '1' || $value === 1) {
+                    return true;
+                }
+                if ($value === 'false' || $value === '0' || $value === 0) {
+                    return false;
+                }
+                return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            }, $validated['filters']['is_active']);
+        }
 
         return $validated;
     }

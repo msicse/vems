@@ -3,11 +3,28 @@ import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, ColumnFilter, DataTableColumn, User } from '@/types';
+import { BreadcrumbItem, ColumnFilter, DataTableColumn } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Edit, Eye, Phone, Trash2, UserCheck, UserX, MapPin } from 'lucide-react';
+import { Edit, Eye, Plus, Trash2, Shield, User, Mail } from 'lucide-react';
 
-interface PaginatedDrivers {
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+    user_type: string;
+    department: { name: string } | null;
+    status: string;
+    area: string | null;
+    roles: Array<{ name: string }>;
+    is_driver: boolean;
+    driver_status: string | null;
+    blood_group: string | null;
+    phone: string | null;
+    created_at: string;
+}
+
+interface PaginatedUsers {
     data: User[];
     current_page: number;
     last_page: number;
@@ -17,23 +34,29 @@ interface PaginatedDrivers {
     to: number | null;
 }
 
-interface DriversPageProps {
-    drivers: PaginatedDrivers;
+interface UsersPageProps {
+    users: PaginatedUsers;
     filterOptions: {
-        statuses: string[];
-        blood_groups: string[];
+        user_types?: string[];
+        statuses?: string[];
+        driver_statuses?: string[];
+        roles?: string[];
+        departments?: Array<{ id: number; name: string }>;
+        blood_groups?: string[];
     };
     stats: {
         total: number;
         active: number;
-        inactive: number;
-        suspended: number;
+        available?: number;
+        on_trip?: number;
+        drivers?: number;
+        inactive?: number;
     };
     queryParams: {
         search?: string;
         sort?: string;
         direction?: 'asc' | 'desc';
-        filters?: Record<string, any>;
+        filters?: Record<string, string | string[]>;
         per_page?: number;
     };
 }
@@ -43,7 +66,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Drivers', href: '/drivers' },
 ];
 
-export default function DriversIndex({ drivers, filterOptions, stats, queryParams }: DriversPageProps) {
+export default function DriversIndex({
+    users,
+    filterOptions = {},
+    stats = {},
+    queryParams = {}
+}: UsersPageProps) {
+    const handleRowClick = (user: User) => {
+        router.visit(route('drivers.show', user.id));
+    };
+
     // Define table columns
     const columns: DataTableColumn<User>[] = [
         {
@@ -54,60 +86,75 @@ export default function DriversIndex({ drivers, filterOptions, stats, queryParam
         },
         {
             key: 'name',
-            label: 'Driver',
+            label: 'User',
             sortable: true,
-            render: (value, row) => (
-                <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                        {row.image ? (
-                            <img className="h-10 w-10 rounded-full" src={row.image} alt={row.name} />
-                        ) : (
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-700">
-                                    {row.name.charAt(0).toUpperCase()}
-                                </span>
-                            </div>
-                        )}
+            render: (value, user) => (
+                <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
                     </div>
-                    <div>
-                        <div className="font-medium text-gray-900">{value}</div>
-                        <div className="text-sm text-gray-500">{row.email}</div>
+                    <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm text-gray-900">
+                            {value}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                            @{user.username}
+                        </div>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'phone',
-            label: 'Contact',
+            key: 'user_type',
+            label: 'Type',
             sortable: true,
-            render: (value, row) => (
-                <div className="space-y-1">
-                    {value && (
-                        <div className="flex items-center space-x-1 text-sm">
-                            <Phone className="h-3 w-3 text-gray-400" />
-                            <span>{value}</span>
-                        </div>
-                    )}
-                    {row.whatsapp_id && (
-                        <div className="flex items-center space-x-1 text-sm text-green-600">
-                            <Phone className="h-3 w-3" />
-                            <span>WhatsApp</span>
-                        </div>
-                    )}
-                </div>
+            filterable: true,
+            render: (value) => {
+                const variants = {
+                    admin: 'destructive',
+                    transport_manager: 'default',
+                    driver: 'secondary',
+                    employee: 'outline',
+                } as const;
+
+                const icons = {
+                    admin: <Shield className="h-3 w-3" />,
+                    transport_manager: <Shield className="h-3 w-3" />,
+                    driver: <User className="h-3 w-3" />,
+                    employee: <User className="h-3 w-3" />,
+                };
+
+                return (
+                    <Badge variant={variants[value as keyof typeof variants]} className="gap-1">
+                        {icons[value as keyof typeof icons]}
+                        {value?.replace('_', ' ')}
+                    </Badge>
+                );
+            },
+        },
+        {
+            key: 'department',
+            label: 'Department',
+            sortable: true,
+            filterable: true,
+            render: (value) => (
+                <span className="text-sm">
+                    {value?.name || 'No Department'}
+                </span>
             ),
         },
         {
-            key: 'address',
-            label: 'Location',
+            key: 'area',
+            label: 'Area',
             sortable: true,
             render: (value) => (
-                <div className="flex items-center space-x-1 text-sm">
-                    <MapPin className="h-3 w-3 text-gray-400" />
-                    <span className="truncate max-w-32" title={value}>
-                        {value || 'No address'}
-                    </span>
-                </div>
+                <span className="text-sm text-muted-foreground">
+                    {value || '-'}
+                </span>
             ),
         },
         {
@@ -122,19 +169,28 @@ export default function DriversIndex({ drivers, filterOptions, stats, queryParam
                     suspended: 'destructive',
                 } as const;
 
-                const icons = {
-                    active: <UserCheck className="h-3 w-3" />,
-                    inactive: <UserX className="h-3 w-3" />,
-                    suspended: <UserX className="h-3 w-3" />,
-                };
-
                 return (
-                    <Badge variant={variants[value as keyof typeof variants]} className="gap-1">
-                        {icons[value as keyof typeof icons]}
+                    <Badge variant={variants[value as keyof typeof variants]}>
                         {value}
                     </Badge>
                 );
             },
+        },
+        {
+            key: 'roles',
+            label: 'Roles',
+            sortable: false,
+            filterable: true,
+            render: (value) => (
+                <div className="flex flex-wrap gap-1">
+                    {value?.map((role: { name: string }) => (
+                        <Badge key={role.name} variant="outline" className="text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            {role.name}
+                        </Badge>
+                    ))}
+                </div>
+            ),
         },
         {
             key: 'blood_group',
@@ -191,7 +247,7 @@ export default function DriversIndex({ drivers, filterOptions, stats, queryParam
                         size="sm"
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm(`Are you sure you want to delete driver ${row.name}?`)) {
+                            if (confirm(`Are you sure you want to delete ${row.name}?`)) {
                                 router.delete(route('drivers.destroy', row.id), {
                                     preserveScroll: true,
                                 });
@@ -210,28 +266,60 @@ export default function DriversIndex({ drivers, filterOptions, stats, queryParam
     // Define filters
     const filters: ColumnFilter[] = [
         {
+            key: 'user_type',
+            label: 'User Type',
+            type: 'multiselect',
+            options: (filterOptions.user_types || []).map((type) => ({
+                label: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+                value: type,
+            })),
+        },
+        {
+            key: 'driver_status',
+            label: 'Driver Status',
+            type: 'multiselect',
+            options: (filterOptions.driver_statuses || []).map((status) => ({
+                label: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
+                value: status,
+            })),
+        },
+        {
             key: 'status',
             label: 'Status',
             type: 'multiselect',
-            options: filterOptions.statuses.map((status) => ({
+            options: (filterOptions.statuses || []).map((status) => ({
                 label: status.charAt(0).toUpperCase() + status.slice(1),
                 value: status,
+            })),
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'multiselect',
+            options: (filterOptions.departments || []).map((dept) => ({
+                label: dept.name,
+                value: dept.id.toString(),
+            })),
+        },
+        {
+            key: 'roles',
+            label: 'Roles',
+            type: 'multiselect',
+            options: (filterOptions.roles || []).map((role) => ({
+                label: role.charAt(0).toUpperCase() + role.slice(1),
+                value: role,
             })),
         },
         {
             key: 'blood_group',
             label: 'Blood Group',
             type: 'multiselect',
-            options: filterOptions.blood_groups.map((group) => ({
+            options: (filterOptions.blood_groups || []).map((group) => ({
                 label: group,
                 value: group,
             })),
         },
     ];
-
-    const handleRowClick = (driver: User) => {
-        router.visit(route('drivers.show', driver.id));
-    };
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
@@ -240,46 +328,50 @@ export default function DriversIndex({ drivers, filterOptions, stats, queryParam
             <div className="space-y-6">
                 <PageHeader
                     title="Drivers"
-                    description="Manage your delivery drivers with specialized tools and tracking."
+                    description="Manage drivers and transport managers"
                     actions={[
                         {
                             label: 'Add Driver',
-                            href: route('users.create') + '?user_type=driver',
-                            variant: 'outline',
+                            icon: <Plus className="mr-2 h-4 w-4" />,
+                            href: route('drivers.create'),
                         },
                     ]}
                     stats={[
                         {
                             label: 'Total Drivers',
-                            value: stats.total,
+                            value: stats?.total || 0,
                         },
                         {
                             label: 'Active',
-                            value: stats.active,
+                            value: stats?.active || 0,
                         },
                         {
-                            label: 'Inactive',
-                            value: stats.inactive,
+                            label: 'Available',
+                            value: stats?.available || 0,
                         },
                         {
-                            label: 'Suspended',
-                            value: stats.suspended,
+                            label: 'On Trip',
+                            value: stats?.on_trip || 0,
                         },
                     ]}
                 />
 
                 {/* Data Table */}
-                <ServerSideDataTable
-                    data={drivers}
-                    columns={columns}
-                    queryParams={queryParams}
-                    filterOptions={filterOptions}
-                    filters={filters}
-                    searchPlaceholder="Search drivers by name, email, phone, or address..."
-                    exportable={false}
-                    onRowClick={handleRowClick}
-                    emptyMessage="No drivers found. Add your first driver to get started."
-                />
+                {users ? (
+                    <ServerSideDataTable
+                        data={users}
+                        columns={columns}
+                        queryParams={queryParams}
+                        filterOptions={filterOptions}
+                        filters={filters}
+                        searchPlaceholder="Search drivers by name, email, license number, or department..."
+                        exportable={true}
+                        onRowClick={handleRowClick}
+                        emptyMessage="No drivers found. Add your first driver to get started."
+                    />
+                ) : (
+                    <div className="text-center py-8">Loading drivers...</div>
+                )}
             </div>
         </AppSidebarLayout>
     );

@@ -121,50 +121,79 @@ export function MultiSelect({
             </div>
           ) : (
             <>
-              {/* Selected items first */}
-              {value.length > 0 && !searchTerm && (
+              {!searchTerm ? (
                 <>
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
-                    Selected ({value.length})
-                  </div>
+                  {/* Selected items first */}
+                  {value.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
+                        Selected ({value.length})
+                      </div>
+                      {filteredOptions
+                        .filter(option => value.includes(option.value))
+                        .map((option) => (
+                          <DropdownMenuItem
+                            key={`selected-${option.value}`}
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleSelect(option.value)
+                            }}
+                            className="cursor-pointer bg-muted/30"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <div className="flex h-4 w-4 items-center justify-center">
+                                <Check className="h-3 w-3 text-primary" />
+                              </div>
+                              <span className="font-medium">{option.label}</span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
+                        Available
+                      </div>
+                    </>
+                  )}
+                  {/* Available options */}
                   {filteredOptions
-                    .filter(option => value.includes(option.value))
+                    .filter(option => !value.includes(option.value))
                     .map((option) => (
                       <DropdownMenuItem
-                        key={`selected-${option.value}`}
-                        onSelect={() => handleSelect(option.value)}
-                        className="cursor-pointer bg-muted/30"
+                        key={option.value}
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          handleSelect(option.value)
+                        }}
+                        className="cursor-pointer"
                       >
                         <div className="flex items-center space-x-2">
                           <div className="flex h-4 w-4 items-center justify-center">
-                            <Check className="h-3 w-3 text-primary" />
+                            {/* Empty space for alignment */}
                           </div>
-                          <span className="font-medium">{option.label}</span>
+                          <span>{option.label}</span>
                         </div>
                       </DropdownMenuItem>
                     ))}
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
-                    Available
-                  </div>
                 </>
-              )}
-              {/* Available options */}
-              {filteredOptions
-                .filter(option => !value.includes(option.value))
-                .map((option) => (
+              ) : (
+                /* When searching, show all options with checkmarks */
+                filteredOptions.map((option) => (
                   <DropdownMenuItem
                     key={option.value}
-                    onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer"
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      handleSelect(option.value)
+                    }}
+                    className={cn("cursor-pointer", value.includes(option.value) && "bg-muted/30")}
                   >
                     <div className="flex items-center space-x-2">
                       <div className="flex h-4 w-4 items-center justify-center">
-                        {/* Empty space for alignment */}
+                        {value.includes(option.value) && <Check className="h-3 w-3 text-primary" />}
                       </div>
-                      <span>{option.label}</span>
+                      <span className={value.includes(option.value) ? "font-medium" : ""}>{option.label}</span>
                     </div>
                   </DropdownMenuItem>
-                ))}
+                ))
+              )}
             </>
           )}
         </div>

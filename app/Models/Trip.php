@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trip extends Model
 {
@@ -13,35 +15,29 @@ class Trip extends Model
 
     protected $fillable = [
         'trip_number',
-        'requested_by',
-        'approved_by',
+        'vehicle_route_id',
         'vehicle_id',
         'driver_id',
         'department_id',
+        'requested_by',
+        'approved_by',
         'purpose',
         'description',
-        'trip_type',
+        'schedule_type',
         'priority',
-        'start_location',
-        'start_latitude',
-        'start_longitude',
-        'end_location',
-        'end_latitude',
-        'end_longitude',
-        'via_points',
-        'estimated_distance',
-        'estimated_duration',
-        'scheduled_start',
-        'scheduled_end',
-        'actual_start',
-        'actual_end',
-        'passenger_count',
-        'passenger_list',
-        'status',
-        'actual_distance',
+        'scheduled_date',
+        'scheduled_start_time',
+        'scheduled_end_time',
+        'actual_start_time',
+        'actual_end_time',
+        'odometer_start',
+        'odometer_end',
         'actual_duration',
         'fuel_consumed',
-        'trip_cost',
+        'fuel_cost',
+        'other_costs',
+        'total_cost',
+        'status',
         'driver_rating',
         'vehicle_rating',
         'feedback',
@@ -53,17 +49,19 @@ class Trip extends Model
     protected function casts(): array
     {
         return [
-            'via_points' => 'array',
-            'passenger_list' => 'array',
             'trip_documents' => 'array',
-            'scheduled_start' => 'datetime',
-            'scheduled_end' => 'datetime',
-            'actual_start' => 'datetime',
-            'actual_end' => 'datetime',
-            'estimated_distance' => 'decimal:2',
-            'actual_distance' => 'decimal:2',
+            'scheduled_date' => 'date',
+            'scheduled_start_time' => 'datetime:H:i',
+            'scheduled_end_time' => 'datetime:H:i',
+            'actual_start_time' => 'datetime',
+            'actual_end_time' => 'datetime',
+            'odometer_start' => 'decimal:2',
+            'odometer_end' => 'decimal:2',
+            'distance_traveled' => 'decimal:2',
             'fuel_consumed' => 'decimal:2',
-            'trip_cost' => 'decimal:2',
+            'fuel_cost' => 'decimal:2',
+            'other_costs' => 'decimal:2',
+            'total_cost' => 'decimal:2',
         ];
     }
 
@@ -88,9 +86,41 @@ class Trip extends Model
         return $this->belongsTo(User::class, 'driver_id');
     }
 
+    public function vehicleRoute(): BelongsTo
+    {
+        return $this->belongsTo(VehicleRoute::class);
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function passengers(): HasMany
+    {
+        return $this->hasMany(TripPassenger::class);
+    }
+
+    /**
+     * Vehicle assignment history
+     */
+    public function vehicleAssignments(): HasMany
+    {
+        return $this->hasMany(TripVehicleAssignment::class);
+    }
+
+    /**
+     * Current vehicle assignment
+     */
+    public function currentVehicleAssignment(): HasOne
+    {
+        return $this->hasOne(TripVehicleAssignment::class)->where('is_current', true)->latestOfMany('assigned_at');
+    }
+
+    // Get driver through vehicle relationship
+    public function getDriverAttribute()
+    {
+        return $this->vehicle?->driver;
     }
 
     // Scopes

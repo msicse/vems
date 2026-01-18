@@ -13,10 +13,14 @@ class Vehicle extends Model
         'model',
         'color',
         'registration_number',
+        'vehicle_type',
+        'rental_type',
+        'capacity',
         'vendor', // Keep for backward compatibility during migration
         'vendor_id',
         'driver_id',
         'is_active',
+        'status',
         // Tax Token
         'tax_token_last_date',
         'tax_token_number',
@@ -45,6 +49,10 @@ class Vehicle extends Model
         'fitness_alert_enabled',
         'insurance_alert_enabled',
         'alert_days_before',
+        // Parking Location
+        'parking_address',
+        'parking_latitude',
+        'parking_longitude',
     ];
 
     protected $casts = [
@@ -57,6 +65,8 @@ class Vehicle extends Model
         'insurance_alert_enabled' => 'boolean',
         'manufacture_year' => 'integer',
         'alert_days_before' => 'integer',
+        'parking_latitude' => 'decimal:8',
+        'parking_longitude' => 'decimal:8',
     ];
 
     /**
@@ -89,6 +99,14 @@ class Vehicle extends Model
     public function currentDriverAssignment()
     {
         return $this->hasOne(VehicleDriverAssignment::class)->where('is_current', true)->latestOfMany('started_at');
+    }
+
+    /**
+     * Trips using this vehicle
+     */
+    public function trips()
+    {
+        return $this->hasMany(Trip::class);
     }
 
     /**
