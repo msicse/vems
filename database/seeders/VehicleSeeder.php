@@ -20,7 +20,9 @@ class VehicleSeeder extends Seeder
                 'model' => 'Camry',
                 'color' => 'Silver',
                 'registration_number' => 'ABC-123',
-                'vendor' => 'Toyota Dealership',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'own',
                 'is_active' => true,
             ],
             [
@@ -28,7 +30,9 @@ class VehicleSeeder extends Seeder
                 'model' => 'Civic',
                 'color' => 'Blue',
                 'registration_number' => 'DEF-456',
-                'vendor' => 'Honda Motors',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'pool',
                 'is_active' => true,
             ],
             [
@@ -36,15 +40,19 @@ class VehicleSeeder extends Seeder
                 'model' => 'F-150',
                 'color' => 'Red',
                 'registration_number' => 'GHI-789',
-                'vendor' => 'Ford Trucks',
+                'vendor_id' => null,
+                'vehicle_type' => 'pickup',
+                'rental_type' => 'own',
                 'is_active' => true,
             ],
             [
                 'brand' => 'Chevrolet',
-                'model' => 'Malibu',
+                'model' => 'Suburban',
                 'color' => 'Black',
                 'registration_number' => 'JKL-012',
-                'vendor' => 'Chevy Dealer',
+                'vendor_id' => null,
+                'vehicle_type' => 'suv',
+                'rental_type' => 'pool',
                 'is_active' => false,
             ],
             [
@@ -52,56 +60,71 @@ class VehicleSeeder extends Seeder
                 'model' => 'Altima',
                 'color' => 'White',
                 'registration_number' => 'MNO-345',
-                'vendor' => 'Nissan Center',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'rental',
                 'is_active' => true,
             ],
             [
                 'brand' => 'BMW',
-                'model' => '3 Series',
+                'model' => '5 Series',
                 'color' => 'Gray',
                 'registration_number' => 'PQR-678',
-                'vendor' => 'BMW Dealership',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'pool',
                 'is_active' => true,
             ],
             [
                 'brand' => 'Mercedes',
-                'model' => 'C-Class',
+                'model' => 'E-Class',
                 'color' => 'Silver',
                 'registration_number' => 'STU-901',
-                'vendor' => 'Mercedes Benz',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'pool',
                 'is_active' => true,
             ],
             [
                 'brand' => 'Audi',
-                'model' => 'A4',
-                'color' => 'Blue',
+                'model' => 'A6',
+                'color' => 'Black',
                 'registration_number' => 'VWX-234',
-                'vendor' => 'Audi Center',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'pool',
                 'is_active' => false,
             ],
             [
                 'brand' => 'Hyundai',
-                'model' => 'Elantra',
-                'color' => 'Green',
+                'model' => 'Sonata',
+                'color' => 'Blue',
                 'registration_number' => 'YZA-567',
-                'vendor' => 'Hyundai Motors',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'own',
                 'is_active' => true,
             ],
             [
                 'brand' => 'Kia',
                 'model' => 'Optima',
-                'color' => 'Orange',
+                'color' => 'Red',
                 'registration_number' => 'BCD-890',
-                'vendor' => 'Kia Dealership',
+                'vendor_id' => null,
+                'vehicle_type' => 'sedan',
+                'rental_type' => 'pool',
                 'is_active' => true,
             ],
         ];
 
         foreach ($vehicles as $vehicle) {
-            Vehicle::create($vehicle);
+            Vehicle::updateOrCreate(
+                ['registration_number' => $vehicle['registration_number']],
+                $vehicle
+            );
         }
 
-        // Create additional random vehicles using the factory
-        Vehicle::factory(15)->create();
+        echo "VMS Vehicles created successfully:\n";
+        echo "- 10 vehicles with different types and rental status\n";
     }
 }

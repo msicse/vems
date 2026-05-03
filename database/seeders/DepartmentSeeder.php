@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class DepartmentSeeder extends Seeder
 {
@@ -86,6 +86,11 @@ class DepartmentSeeder extends Seeder
             ],
         ];
 
-        DB::table('departments')->insert($departments);
+        foreach ($departments as $department) {
+            Department::updateOrCreate(
+                ['code' => $department['code']],
+                $department
+            );
+        }
     }
 }

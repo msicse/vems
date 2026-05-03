@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/api/stops', [StopController::class, 'store'])->name('api.stops.store');
 
     // Trip management routes
+    Route::post('/trips/recurring', [TripController::class, 'storeRecurring'])->name('trips.store-recurring');
     Route::resource('trips', TripController::class);
     Route::post('/trips/{trip}/approve', [TripController::class, 'approve'])->name('trips.approve');
     Route::post('/trips/{trip}/reject', [TripController::class, 'reject'])->name('trips.reject');

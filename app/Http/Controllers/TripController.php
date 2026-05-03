@@ -7,6 +7,8 @@ use App\Models\Vehicle;
 use App\Models\VehicleRoute;
 use App\Models\User;
 use App\Models\Department;
+use App\Models\Factory;
+use App\Models\Logistics;
 use App\Models\Stop;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,7 +35,6 @@ class TripController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('trip_number', 'like', "%{$search}%")
-                    ->orWhere('purpose', 'like', "%{$search}%")
                     ->orWhereHas('vehicle', function ($vq) use ($search) {
                         $vq->where('registration_number', 'like', "%{$search}%");
                     })
@@ -116,7 +117,7 @@ class TripController extends Controller
                 ])
             ]);
 
-        $departments = Department::where('status', 'active')
+        $departments = Department::where('is_active', true)
             ->get()
             ->map(fn($d) => ['value' => $d->id, 'label' => $d->name]);
 
@@ -129,11 +130,37 @@ class TripController extends Controller
                 'department' => $u->department?->name
             ]);
 
+        $userGroups = \App\Models\UserGroup::with('users')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($g) => [
+                'value' => $g->id,
+                'label' => $g->name,
+                'user_ids' => $g->users->pluck('id'),
+            ]);
+
         return Inertia::render('trips/create', [
             'vehicles' => $vehicles,
             'routes' => $routes,
             'departments' => $departments,
             'employees' => $employees,
+            'userGroups' => $userGroups,
+            'factories' => Factory::where('status', 'active')
+                ->orderBy('name')
+                ->get()
+                ->map(fn($f) => [
+                    'value' => $f->id,
+                    'label' => "({$f->account_id}) {$f->name}",
+                    'city'  => $f->city,
+                ]),
+            'logistics' => Logistics::active()
+                ->orderBy('name')
+                ->get()
+                ->map(fn($l) => [
+                    'value' => $l->id,
+                    'label' => $l->name,
+                ]),
         ]);
     }
 
@@ -146,34 +173,69 @@ class TripController extends Controller
             'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'department_id' => 'nullable|exists:departments,id',
-            'purpose' => 'required|string|max:255',
+            'trip_type' => 'nullable|string',
+            'team_number' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'schedule_type' => 'required|in:pick-and-drop,engineer,training,adhoc,reposition',
+            'remarks' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,urgent',
             'scheduled_date' => 'required|date',
             'scheduled_start_time' => 'required',
             'scheduled_end_time' => 'required',
+            'start_location' => 'nullable|string|max:255',
+            'end_location' => 'nullable|string|max:255',
+            'is_return' => 'boolean',
+            'is_recurring' => 'boolean',
+            'recurring_start_date' => 'nullable|date|required_if:is_recurring,true',
+            'recurring_end_date' => 'nullable|date|required_if:is_recurring,true|after_or_equal:recurring_start_date',
+            'group_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'passengers' => 'nullable|array',
             'passengers.*.user_id' => 'required|exists:users,id',
             'passengers.*.pickup_stop_id' => 'nullable|exists:stops,id',
             'passengers.*.dropoff_stop_id' => 'nullable|exists:stops,id',
+            'factory_ids' => 'nullable|array',
+            'factory_ids.*' => 'exists:factories,id',
+            'department_slots' => 'nullable|array',
+            'department_slots.*.department_id' => 'required|exists:departments,id',
+            'department_slots.*.count' => 'required|integer|min:1|max:999',
+            'logistics_ids' => 'nullable|array',
+            'logistics_ids.*' => 'exists:logistics,id',
         ]);
 
         DB::beginTransaction();
         try {
             // Create trip
-            $trip = Trip::create([
-                ...$validated,
-                'requested_by' => auth()->id(),
-                'status' => 'pending',
-            ]);
+            $tripData = collect($validated)
+                ->except(['passengers', 'factory_ids', 'department_slots', 'logistics_ids'])
+                ->merge(['requested_by' => auth()->id(), 'status' => 'pending'])
+                ->toArray();
+
+            $trip = Trip::create($tripData);
 
             // Add passengers if provided
             if (!empty($validated['passengers'])) {
                 foreach ($validated['passengers'] as $passenger) {
                     $trip->passengers()->create($passenger);
                 }
+            }
+
+            // Attach factories
+            if (!empty($validated['factory_ids'])) {
+                $trip->factories()->sync($validated['factory_ids']);
+            }
+
+            // Attach department headcount slots
+            if (!empty($validated['department_slots'])) {
+                $syncData = collect($validated['department_slots'])
+                    ->keyBy('department_id')
+                    ->map(fn($slot) => ['count' => $slot['count']])
+                    ->toArray();
+                $trip->departments()->sync($syncData);
+            }
+
+            // Attach logistics
+            if (!empty($validated['logistics_ids'])) {
+                $trip->logistics()->sync($validated['logistics_ids']);
             }
 
             DB::commit();
@@ -185,6 +247,111 @@ class TripController extends Controller
             DB::rollBack();
             return back()
                 ->withErrors(['error' => 'Failed to create trip: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Store multiple recurring trips
+     */
+    public function storeRecurring(Request $request)
+    {
+        $validated = $request->validate([
+            'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'trip_type' => 'nullable|string',
+            'team_number' => 'nullable|string|max:100',
+            'description' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'priority' => 'required|in:low,medium,high,urgent',
+            'recurring_start_date' => 'required|date',
+            'recurring_end_date' => 'required|date|after_or_equal:recurring_start_date',
+            'scheduled_start_time' => 'required',
+            'scheduled_end_time' => 'required',
+            'start_location' => 'nullable|string|max:255',
+            'end_location' => 'nullable|string|max:255',
+            'is_return' => 'boolean',
+            'group_name' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'passengers' => 'nullable|array',
+            'passengers.*.user_id' => 'required|exists:users,id',
+            'factory_ids' => 'nullable|array',
+            'factory_ids.*' => 'exists:factories,id',
+            'department_slots' => 'nullable|array',
+            'department_slots.*.department_id' => 'required|exists:departments,id',
+            'department_slots.*.count' => 'required|integer|min:1|max:999',
+            'logistics_ids' => 'nullable|array',
+            'logistics_ids.*' => 'exists:logistics,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $start = \Carbon\Carbon::parse($validated['recurring_start_date']);
+            $end   = \Carbon\Carbon::parse($validated['recurring_end_date']);
+            $dates = [];
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dates[] = $d->toDateString();
+            }
+
+            // Create recurring group
+            $group = \App\Models\TripRecurringGroup::create([
+                'group_name'  => $validated['group_name'] ?? null,
+                'created_by'  => auth()->id(),
+                'start_date'  => $validated['recurring_start_date'],
+                'end_date'    => $validated['recurring_end_date'],
+                'total_trips' => count($dates),
+                'notes'       => $validated['notes'] ?? null,
+            ]);
+
+            $tripBase = collect($validated)->except([
+                'passengers', 'factory_ids', 'department_slots', 'logistics_ids',
+                'recurring_start_date', 'recurring_end_date', 'group_name',
+            ])->merge([
+                'requested_by'        => auth()->id(),
+                'status'              => 'pending',
+                'is_recurring'        => true,
+                'recurring_group_id'  => $group->id,
+                'recurring_start_date' => $validated['recurring_start_date'],
+                'recurring_end_date'   => $validated['recurring_end_date'],
+            ])->toArray();
+
+            $firstTrip = null;
+            foreach ($dates as $date) {
+                $tripData = array_merge($tripBase, ['scheduled_date' => $date]);
+                $trip = Trip::create($tripData);
+
+                if ($firstTrip === null) $firstTrip = $trip;
+
+                if (!empty($validated['passengers'])) {
+                    foreach ($validated['passengers'] as $passenger) {
+                        $trip->passengers()->create($passenger);
+                    }
+                }
+                if (!empty($validated['factory_ids'])) {
+                    $trip->factories()->sync($validated['factory_ids']);
+                }
+                if (!empty($validated['department_slots'])) {
+                    $syncData = collect($validated['department_slots'])
+                        ->keyBy('department_id')
+                        ->map(fn($slot) => ['count' => $slot['count']])
+                        ->toArray();
+                    $trip->departments()->sync($syncData);
+                }
+                if (!empty($validated['logistics_ids'])) {
+                    $trip->logistics()->sync($validated['logistics_ids']);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('trips.index')
+                ->with('success', count($dates) . ' recurring trips created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()
+                ->withErrors(['error' => 'Failed to create recurring trips: ' . $e->getMessage()])
                 ->withInput();
         }
     }
@@ -204,7 +371,10 @@ class TripController extends Controller
             'passengers.pickupStop',
             'passengers.dropoffStop',
             'vehicleAssignments.vehicle',
-            'vehicleAssignments.assignedBy'
+            'vehicleAssignments.assignedBy',
+            'logistics',
+            'factories',
+            'departments',
         ]);
 
         $vehicleAssignments = $trip->vehicleAssignments()
@@ -238,7 +408,7 @@ class TripController extends Controller
             return back()->with('error', 'Cannot edit trip in current status.');
         }
 
-        $trip->load('passengers');
+        $trip->load(['passengers', 'logistics', 'factories', 'departments']);
 
         $vehicles = Vehicle::with('driver')
             ->where('is_active', true)
@@ -261,7 +431,7 @@ class TripController extends Controller
                 ])
             ]);
 
-        $departments = Department::where('status', 'active')
+        $departments = Department::where('is_active', true)
             ->get()
             ->map(fn($d) => ['value' => $d->id, 'label' => $d->name]);
 
@@ -274,12 +444,30 @@ class TripController extends Controller
                 'department' => $u->department?->name
             ]);
 
+        $factories = Factory::where('status', 'active')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($f) => [
+                'value' => $f->id,
+                'label' => "({$f->account_id}) {$f->name}",
+            ]);
+
+        $logistics = Logistics::active()
+            ->orderBy('name')
+            ->get()
+            ->map(fn($l) => [
+                'value' => $l->id,
+                'label' => $l->name,
+            ]);
+
         return Inertia::render('trips/edit', [
             'trip' => $trip,
             'vehicles' => $vehicles,
             'routes' => $routes,
             'departments' => $departments,
             'employees' => $employees,
+            'factories' => $factories,
+            'logistics' => $logistics,
         ]);
     }
 
@@ -297,34 +485,62 @@ class TripController extends Controller
             'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'department_id' => 'nullable|exists:departments,id',
-            'purpose' => 'required|string|max:255',
+            'trip_type' => 'nullable|string',
+            'team_number' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'schedule_type' => 'required|in:pick-and-drop,engineer,training,adhoc,reposition',
+            'remarks' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,urgent',
             'scheduled_date' => 'required|date',
             'scheduled_start_time' => 'required',
             'scheduled_end_time' => 'required',
+            'start_location' => 'nullable|string|max:255',
+            'end_location' => 'nullable|string|max:255',
+            'is_return' => 'boolean',
             'notes' => 'nullable|string',
             'passengers' => 'nullable|array',
             'passengers.*.user_id' => 'required|exists:users,id',
             'passengers.*.pickup_stop_id' => 'nullable|exists:stops,id',
             'passengers.*.dropoff_stop_id' => 'nullable|exists:stops,id',
+            'factory_ids' => 'nullable|array',
+            'factory_ids.*' => 'exists:factories,id',
+            'department_slots' => 'nullable|array',
+            'department_slots.*.department_id' => 'required|exists:departments,id',
+            'department_slots.*.count' => 'required|integer|min:1|max:999',
+            'logistics_ids' => 'nullable|array',
+            'logistics_ids.*' => 'exists:logistics,id',
         ]);
 
         DB::beginTransaction();
         try {
-            $trip->update($validated);
+            $tripData = collect($validated)
+                ->except(['passengers', 'factory_ids', 'department_slots', 'logistics_ids'])
+                ->toArray();
+            $trip->update($tripData);
 
             // Update passengers
             if (isset($validated['passengers'])) {
-                // Remove existing passengers
                 $trip->passengers()->delete();
-
-                // Add new passengers
                 foreach ($validated['passengers'] as $passenger) {
                     $trip->passengers()->create($passenger);
                 }
             }
+
+            // Sync factories
+            $trip->factories()->sync($validated['factory_ids'] ?? []);
+
+            // Sync department headcount slots
+            if (!empty($validated['department_slots'])) {
+                $syncData = collect($validated['department_slots'])
+                    ->keyBy('department_id')
+                    ->map(fn($slot) => ['count' => $slot['count']])
+                    ->toArray();
+                $trip->departments()->sync($syncData);
+            } else {
+                $trip->departments()->detach();
+            }
+
+            // Sync logistics
+            $trip->logistics()->sync($validated['logistics_ids'] ?? []);
 
             DB::commit();
 

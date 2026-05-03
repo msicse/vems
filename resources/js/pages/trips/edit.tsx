@@ -3,14 +3,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormTextarea } from '@/base-components/base-form';
+import { MultiSelect } from '@/base-components/base-multi-select';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, Trip } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Plus, X, UserPlus, Calendar, AlertCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
+import { BreadcrumbItem } from '@/types';
+import { Head, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Plus, Minus, X, UserPlus, Calendar, AlertCircle, MapPin, Building2, Users, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import * as React from 'react';
 
 interface Passenger {
     user_id: string;
@@ -18,9 +21,17 @@ interface Passenger {
     dropoff_stop_id?: string;
 }
 
-export default function EditTrip({ trip, vehicles, routes, departments, employees }: any) {
+interface DeptHeadcount {
+    department_id: string;
+    count: number;
+}
+
+export default function EditTrip({ trip, vehicles, routes, departments, employees, factories, logistics }: any) {
     const [selectedRoute, setSelectedRoute] = useState<any>(null);
     const [passengers, setPassengers] = useState<Passenger[]>([]);
+    const [selectedFactoryIds, setSelectedFactoryIds] = useState<(string | number)[]>([]);
+    const [selectedLogisticsIds, setSelectedLogisticsIds] = useState<(string | number)[]>([]);
+    const [deptInput, setDeptInput] = useState({ department_id: '', count: 1 });
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -33,15 +44,22 @@ export default function EditTrip({ trip, vehicles, routes, departments, employee
         vehicle_route_id: trip.vehicle_route_id?.toString() || '',
         vehicle_id: trip.vehicle_id.toString(),
         department_id: trip.department_id?.toString() || '',
-        purpose: trip.purpose || '',
+        trip_type: trip.trip_type || '',
+        team_number: trip.team_number || '',
+        remarks: trip.remarks || '',
         description: trip.description || '',
-        schedule_type: trip.schedule_type || 'pick-and-drop',
         priority: trip.priority || 'medium',
         scheduled_date: trip.scheduled_date || '',
         scheduled_start_time: trip.scheduled_start_time || '',
         scheduled_end_time: trip.scheduled_end_time || '',
+        start_location: trip.start_location || '',
+        end_location: trip.end_location || '',
+        is_return: trip.is_return || false,
         notes: trip.notes || '',
         passengers: [] as Passenger[],
+        factory_ids: [] as (string | number)[],
+        logistics_ids: [] as (string | number)[],
+        department_slots: [] as DeptHeadcount[],
     });
 
     useEffect(() => {
@@ -61,9 +79,58 @@ export default function EditTrip({ trip, vehicles, routes, departments, employee
             const route = routes?.find((r: any) => r.value === trip.vehicle_route_id);
             setSelectedRoute(route);
         }
+
+        // Initialize factories
+        if (trip.factories && trip.factories.length > 0) {
+            const ids = trip.factories.map((f: any) => f.id.toString());
+            setSelectedFactoryIds(ids);
+            setData('factory_ids', ids);
+        }
+
+        // Initialize logistics
+        if (trip.logistics && trip.logistics.length > 0) {
+            const ids = trip.logistics.map((l: any) => l.id.toString());
+            setSelectedLogisticsIds(ids);
+            setData('logistics_ids', ids);
+        }
+
+        // Initialize department slots
+        if (trip.departments && trip.departments.length > 0) {
+            const slots = trip.departments.map((d: any) => ({
+                department_id: d.id.toString(),
+                count: d.pivot?.count || 1,
+            }));
+            setData('department_slots', slots);
+        }
     }, []);
 
     const selectedVehicle = vehicles?.find((v: any) => v.value === data.vehicle_id);
+
+    // Sync factories with form data
+    React.useEffect(() => {
+        setData('factory_ids', selectedFactoryIds);
+    }, [selectedFactoryIds]);
+
+    // Sync logistics with form data
+    React.useEffect(() => {
+        setData('logistics_ids', selectedLogisticsIds);
+    }, [selectedLogisticsIds]);
+
+    const addDeptHeadcount = () => {
+        if (!deptInput.department_id || deptInput.count < 1) return;
+        if (data.department_slots.some(d => d.department_id === deptInput.department_id)) return;
+        setData('department_slots', [
+            ...data.department_slots,
+            { department_id: deptInput.department_id, count: deptInput.count },
+        ]);
+        setDeptInput({ department_id: '', count: 1 });
+    };
+
+    const removeDeptHeadcount = (departmentId: string) => {
+        setData('department_slots', data.department_slots.filter(d => d.department_id !== departmentId));
+    };
+
+    const totalDeptHeadcount = data.department_slots.reduce((sum, d) => sum + d.count, 0);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,132 +212,357 @@ export default function EditTrip({ trip, vehicles, routes, departments, employee
                             <CardDescription>Basic details about the trip</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* Vehicle & Route */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="vehicle_id">Vehicle *</Label>
-                                    <Select
+                                    <SearchableSelect
+                                        label="Vehicle *"
+                                        name="vehicle_id"
                                         value={data.vehicle_id}
-                                        onValueChange={(value) => setData('vehicle_id', value)}
-                                    >
-                                        <SelectTrigger id="vehicle_id">
-                                            <SelectValue placeholder="Select vehicle" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {vehicles?.map((vehicle: any) => (
-                                                <SelectItem key={vehicle.value} value={vehicle.value}>
-                                                    {vehicle.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        onChange={(value) => setData('vehicle_id', value)}
+                                        options={vehicles?.map((v: any) => ({ label: v.label, value: v.value })) || []}
+                                        placeholder="Search vehicle..."
+                                        required
+                                        error={errors.vehicle_id}
+                                    />
                                     {selectedVehicle && (
-                                        <p className="text-sm text-gray-500">Driver: {selectedVehicle.driver}</p>
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-blue-50 px-2 py-1 rounded">
+                                            <User className="h-3 w-3" />
+                                            Driver: <strong>{selectedVehicle.driver}</strong>
+                                        </div>
                                     )}
-                                    {errors.vehicle_id && <p className="text-sm text-red-500">{errors.vehicle_id}</p>}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_route_id">Route (Optional)</Label>
-                                    <Select
-                                        value={data.vehicle_route_id}
-                                        onValueChange={handleRouteChange}
-                                    >
-                                        <SelectTrigger id="vehicle_route_id">
-                                            <SelectValue placeholder="Select route" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {routes?.map((route: any) => (
-                                                <SelectItem key={route.value} value={route.value}>
-                                                    {route.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.vehicle_route_id && <p className="text-sm text-red-500">{errors.vehicle_route_id}</p>}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="schedule_type">Schedule Type *</Label>
-                                    <Select
-                                        value={data.schedule_type}
-                                        onValueChange={(value) => setData('schedule_type', value)}
-                                    >
-                                        <SelectTrigger id="schedule_type">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="pick-and-drop">Pick and Drop</SelectItem>
-                                            <SelectItem value="engineer">Engineer</SelectItem>
-                                            <SelectItem value="training">Training</SelectItem>
-                                            <SelectItem value="adhoc">Ad-hoc</SelectItem>
-                                            <SelectItem value="reposition">Reposition</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.schedule_type && <p className="text-sm text-red-500">{errors.schedule_type}</p>}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="priority">Priority *</Label>
-                                    <Select
-                                        value={data.priority}
-                                        onValueChange={(value) => setData('priority', value)}
-                                    >
-                                        <SelectTrigger id="priority">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                            <SelectItem value="urgent">Urgent</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.priority && <p className="text-sm text-red-500">{errors.priority}</p>}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="department_id">Department (Optional)</Label>
-                                    <Select
-                                        value={data.department_id}
-                                        onValueChange={(value) => setData('department_id', value)}
-                                    >
-                                        <SelectTrigger id="department_id">
-                                            <SelectValue placeholder="Select department" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {departments?.map((dept: any) => (
-                                                <SelectItem key={dept.value} value={dept.value}>
-                                                    {dept.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.department_id && <p className="text-sm text-red-500">{errors.department_id}</p>}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="purpose">Purpose *</Label>
-                                <Input
-                                    id="purpose"
-                                    value={data.purpose}
-                                    onChange={(e) => setData('purpose', e.target.value)}
-                                    placeholder="Enter trip purpose"
+                                <SearchableSelect
+                                    label="Route (Optional)"
+                                    name="vehicle_route_id"
+                                    value={data.vehicle_route_id}
+                                    onChange={handleRouteChange}
+                                    options={routes?.map((r: any) => ({ label: r.label, value: r.value })) || []}
+                                    placeholder="Search route..."
+                                    error={errors.vehicle_route_id}
                                 />
-                                {errors.purpose && <p className="text-sm text-red-500">{errors.purpose}</p>}
                             </div>
 
-                            <FormTextarea
-                                label="Description"
-                                name="description"
-                                value={data.description}
-                                onChange={(value) => setData('description', value)}
-                                placeholder="Enter trip description"
-                                rows={3}
-                                error={errors.description}
-                            />
+                            {/* Trip Type | Priority | Department */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <SearchableSelect
+                                    label="Trip Type *"
+                                    name="trip_type"
+                                    value={data.trip_type}
+                                    onChange={(value) => setData('trip_type', value)}
+                                    options={[
+                                        { label: 'Inspection', value: 'inspection' },
+                                        { label: 'Pick-up', value: 'pick-up' },
+                                        { label: 'Drop-off', value: 'drop-off' },
+                                        { label: 'Training', value: 'training' },
+                                        { label: 'Complaints', value: 'complaints' },
+                                        { label: 'CVV', value: 'CVV' },
+                                        { label: 'Incident Inspection', value: 'Incident Inspection' },
+                                        { label: 'Officials', value: 'officials' },
+                                        { label: 'Assigned', value: 'Assigned' },
+                                    ]}
+                                    placeholder="Trip type..."
+                                    required
+                                    error={errors.trip_type}
+                                />
+                                <SearchableSelect
+                                    label="Priority *"
+                                    name="priority"
+                                    value={data.priority}
+                                    onChange={(value) => setData('priority', value)}
+                                    options={[
+                                        { label: 'Low', value: 'low' },
+                                        { label: 'Medium', value: 'medium' },
+                                        { label: 'High', value: 'high' },
+                                        { label: 'Urgent', value: 'urgent' },
+                                    ]}
+                                    placeholder="Priority..."
+                                    required
+                                    error={errors.priority}
+                                />
+                                <SearchableSelect
+                                    label="Department"
+                                    name="department_id"
+                                    value={data.department_id}
+                                    onChange={(value) => setData('department_id', value)}
+                                    options={departments?.map((d: any) => ({ label: d.label, value: d.value })) || []}
+                                    placeholder="Select department..."
+                                    error={errors.department_id}
+                                />
+                            </div>
+
+                            {/* Team Number | Start Location | End Location */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="team_number">Team Number</Label>
+                                    <Input
+                                        id="team_number"
+                                        value={data.team_number}
+                                        onChange={(e) => setData('team_number', e.target.value)}
+                                        placeholder="e.g. TM-001"
+                                    />
+                                    {errors.team_number && <p className="text-sm text-red-500">{errors.team_number}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="start_location">Start Location</Label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                        <Input
+                                            id="start_location"
+                                            value={data.start_location}
+                                            onChange={(e) => setData('start_location', e.target.value)}
+                                            placeholder="Start location"
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                    {errors.start_location && <p className="text-sm text-red-500">{errors.start_location}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="end_location">End Location</Label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                        <Input
+                                            id="end_location"
+                                            value={data.end_location}
+                                            onChange={(e) => setData('end_location', e.target.value)}
+                                            placeholder="End location"
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                    {errors.end_location && <p className="text-sm text-red-500">{errors.end_location}</p>}
+                                </div>
+                            </div>
+
+                            {/* Remarks | Description */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormTextarea
+                                    label="Remarks"
+                                    name="remarks"
+                                    value={data.remarks}
+                                    onChange={(value) => setData('remarks', value)}
+                                    placeholder="Additional remarks"
+                                    rows={3}
+                                    error={errors.remarks}
+                                />
+                                <FormTextarea
+                                    label="Description"
+                                    name="description"
+                                    value={data.description}
+                                    onChange={(value) => setData('description', value)}
+                                    placeholder="Enter trip description"
+                                    rows={3}
+                                    error={errors.description}
+                                />
+                            </div>
+
+                            {/* Return Trip */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="is_return"
+                                    checked={data.is_return}
+                                    onChange={(e) => setData('is_return', e.target.checked)}
+                                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                                />
+                                <Label htmlFor="is_return" className="cursor-pointer">Return Trip</Label>
+                            </div>
                         </CardContent>
                     </Card>
+
+                    {/* Factories + Headcount + Logistics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Factories */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                                    <Building2 className="h-3.5 w-3.5" />
+                                    Factories
+                                    {selectedFactoryIds.length > 0 && (
+                                        <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                            {selectedFactoryIds.length}
+                                        </Badge>
+                                    )}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <MultiSelect
+                                    options={factories?.map((f: any) => ({ label: f.label, value: f.value })) || []}
+                                    value={selectedFactoryIds}
+                                    onChange={setSelectedFactoryIds}
+                                    placeholder="Select factories..."
+                                    searchPlaceholder="Search factory..."
+                                />
+                                {selectedFactoryIds.length === 0 ? (
+                                    <div className="text-center py-4 text-muted-foreground border-2 border-dashed rounded-lg">
+                                        <Building2 className="h-7 w-7 mx-auto mb-1.5 opacity-25" />
+                                        <p className="text-xs">No factories selected.</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedFactoryIds.map((id) => {
+                                            const factory = factories?.find((f: any) => f.value.toString() === id.toString());
+                                            return (
+                                                <div key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-muted/30 text-xs">
+                                                    <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                    <span className="font-medium truncate max-w-[140px]">{factory?.label ?? id}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedFactoryIds(prev => prev.filter(fid => fid.toString() !== id.toString()))}
+                                                        className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Headcount by Department */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                                    <Users className="h-3.5 w-3.5" />
+                                    Headcount by Department
+                                    {totalDeptHeadcount > 0 && (
+                                        <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                            {totalDeptHeadcount} total
+                                        </Badge>
+                                    )}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="space-y-2">
+                                    <select
+                                        value={deptInput.department_id}
+                                        onChange={(e) => setDeptInput(prev => ({ ...prev, department_id: e.target.value }))}
+                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                    >
+                                        <option value="">Select department...</option>
+                                        {departments?.map((d: any) => (
+                                            <option key={d.value} value={d.value.toString()}>{d.label}</option>
+                                        ))}
+                                    </select>
+
+                                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                                        <div className="h-9 rounded-md border border-input bg-background flex items-center justify-between px-1">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setDeptInput(prev => ({ ...prev, count: Math.max(1, prev.count - 1) }))}
+                                                className="h-7 w-7"
+                                                aria-label="Decrease count"
+                                            >
+                                                <Minus className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <span className="text-sm font-semibold tabular-nums text-foreground px-2">
+                                                {deptInput.count}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setDeptInput(prev => ({ ...prev, count: Math.min(999, prev.count + 1) }))}
+                                                className="h-7 w-7"
+                                                aria-label="Increase count"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={addDeptHeadcount}
+                                            disabled={!deptInput.department_id}
+                                            className="h-9 px-3"
+                                        >
+                                            Add
+                                        </Button>
+                                    </div>
+                                </div>
+                                {data.department_slots.length === 0 ? (
+                                    <div className="text-center py-4 text-muted-foreground border-2 border-dashed rounded-lg">
+                                        <Users className="h-7 w-7 mx-auto mb-1.5 opacity-25" />
+                                        <p className="text-xs">No headcount added yet.</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {data.department_slots.map((d) => {
+                                            const dept = departments?.find((dep: any) => dep.value.toString() === d.department_id);
+                                            return (
+                                                <div key={d.department_id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-muted/30">
+                                                    <Users className="h-3 w-3 text-muted-foreground" />
+                                                    <span className="text-xs font-medium">{dept?.label ?? d.department_id}</span>
+                                                    <span className="text-xs text-muted-foreground">× {d.count}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeDeptHeadcount(d.department_id)}
+                                                        className="text-muted-foreground hover:text-destructive transition-colors"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Logistics */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                                    <Building2 className="h-3.5 w-3.5" />
+                                    Logistics
+                                    {selectedLogisticsIds.length > 0 && (
+                                        <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                            {selectedLogisticsIds.length}
+                                        </Badge>
+                                    )}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <MultiSelect
+                                    options={logistics?.map((l: any) => ({ label: l.label, value: l.value })) || []}
+                                    value={selectedLogisticsIds}
+                                    onChange={setSelectedLogisticsIds}
+                                    placeholder="Select logistics..."
+                                    searchPlaceholder="Search logistics..."
+                                />
+                                {selectedLogisticsIds.length === 0 ? (
+                                    <div className="text-center py-4 text-muted-foreground border-2 border-dashed rounded-lg">
+                                        <Building2 className="h-7 w-7 mx-auto mb-1.5 opacity-25" />
+                                        <p className="text-xs">No logistics selected.</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedLogisticsIds.map((id) => {
+                                            const log = logistics?.find((l: any) => l.value.toString() === id.toString());
+                                            return (
+                                                <div key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-muted/30 text-xs">
+                                                    <span className="font-medium truncate max-w-[140px]">{log?.label ?? id}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedLogisticsIds(prev => prev.filter(lid => lid.toString() !== id.toString()))}
+                                                        className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     {/* Schedule */}
                     <Card>
@@ -441,6 +733,14 @@ export default function EditTrip({ trip, vehicles, routes, departments, employee
                             />
                         </CardContent>
                     </Card>
+
+                    {/* Error Display */}
+                    {errors.error && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{errors.error}</AlertDescription>
+                        </Alert>
+                    )}
 
                     {/* Submit Actions */}
                     <div className="flex justify-end gap-3">

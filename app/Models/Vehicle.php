@@ -16,7 +16,6 @@ class Vehicle extends Model
         'vehicle_type',
         'rental_type',
         'capacity',
-        'vendor', // Keep for backward compatibility during migration
         'vendor_id',
         'driver_id',
         'is_active',

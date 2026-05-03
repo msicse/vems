@@ -36,7 +36,7 @@ export function SearchableSelect({
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Get the display value
-    const selectedOption = options.find(option => option.value === value);
+    const selectedOption = options.find(option => String(option.value) === String(value));
     const displayValue = selectedOption ? selectedOption.label : '';
 
     // Filter options based on search term
@@ -89,20 +89,20 @@ export function SearchableSelect({
 
     return (
         <div className="space-y-2">
-            <label 
-                htmlFor={name} 
+            <label
+                htmlFor={name}
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
                 {label}
                 {required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            
+
             <div className="relative" ref={dropdownRef}>
                 <div
                     className={`
                         relative w-full cursor-pointer rounded-md border bg-white dark:bg-gray-800 px-3 py-2 text-left shadow-sm
-                        ${error 
-                            ? 'border-red-300 focus-within:border-red-500 focus-within:ring-red-500' 
+                        ${error
+                            ? 'border-red-300 focus-within:border-red-500 focus-within:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600 focus-within:border-indigo-500 focus-within:ring-indigo-500'
                         }
                         ${disabled ? 'bg-gray-50 dark:bg-gray-700 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
@@ -153,8 +153,8 @@ export function SearchableSelect({
                                         key={option.value}
                                         className={`
                                             cursor-pointer select-none px-3 py-2 text-sm
-                                            ${option.value === value 
-                                                ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100' 
+                                            ${option.value === value
+                                                ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100'
                                                 : 'text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                                             }
                                         `}

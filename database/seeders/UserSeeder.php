@@ -15,39 +15,42 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create Admin User
-        $admin = User::create([
-            'name' => 'System Administrator',
-            'username' => 'admin',
-            'employee_id' => 'ADM001',
-            'email' => 'admin@vms.com',
-            'user_type' => 'admin',
-            'department_id' => 3, // Administration department
-            'official_phone' => '+8801711000001',
-            'personal_phone' => '+8801855000001',
-            'emergency_phone' => '+8801999000001',
-            'emergency_contact_name' => 'Admin Emergency Contact',
-            'emergency_contact_relation' => 'Family',
-            'present_address' => 'Admin Residence, Dhaka',
-            'permanent_address' => 'Admin Permanent Address, Dhaka',
-            'joining_date' => '2020-01-01',
-            'status' => 'active',
-            'blood_group' => 'O+',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@vems.com'],
+            [
+                'name' => 'System Administrator',
+                'username' => 'admin',
+                'employee_id' => 'ADM001',
+                'user_type' => 'admin',
+                'department_id' => 3, // Administration department
+                'official_phone' => '+8801711000001',
+                'personal_phone' => '+8801855000001',
+                'emergency_phone' => '+8801999000001',
+                'emergency_contact_name' => 'Admin Emergency Contact',
+                'emergency_contact_relation' => 'Family',
+                'present_address' => 'Admin Residence, Dhaka',
+                'permanent_address' => 'Admin Permanent Address, Dhaka',
+                'joining_date' => '2020-01-01',
+                'status' => 'active',
+                'blood_group' => 'O+',
+                'password' => Hash::make('password'),
+            ]
+        );
 
         // Create Transport Manager
-        $transportManager = User::create([
-            'name' => 'Sarah Transport Manager',
-            'username' => 'sarah.manager',
-            'employee_id' => 'TM001',
-            'email' => 'transport.manager@vms.com',
-            'user_type' => 'transport_manager',
-            'department_id' => 1, // Transport department
-            'official_phone' => '+8801711000002',
-            'personal_phone' => '+8801855000002',
-            'emergency_phone' => '+8801999000002',
-            'emergency_contact_name' => 'Manager Emergency Contact',
-            'emergency_contact_relation' => 'Spouse',
+        $transportManager = User::updateOrCreate(
+            ['email' => 'transport.manager@vems.com'],
+            [
+                'name' => 'Sarah Transport Manager',
+                'username' => 'sarah.manager',
+                'employee_id' => 'TM001',
+                'user_type' => 'transport_manager',
+                'department_id' => 1, // Transport department
+                'official_phone' => '+8801711000002',
+                'personal_phone' => '+8801855000002',
+                'emergency_phone' => '+8801999000002',
+                'emergency_contact_name' => 'Manager Emergency Contact',
+                'emergency_contact_relation' => 'Spouse',
             'driving_license_no' => 'DL-TM-001',
             'license_class' => 'B',
             'license_issue_date' => '2018-03-15',
@@ -70,7 +73,7 @@ class UserSeeder extends Seeder
                 'name' => 'Ahmed Senior Driver',
                 'username' => 'ahmed.driver',
                 'employee_id' => 'DRV001',
-                'email' => 'ahmed.driver@vms.com',
+                'email' => 'ahmed.driver@vems.com',
                 'license_no' => 'DL-DRV-001',
                 'phone_suffix' => '003',
                 'blood_group' => 'B+',
@@ -80,7 +83,7 @@ class UserSeeder extends Seeder
                 'name' => 'Karim Senior Driver',
                 'username' => 'karim.driver',
                 'employee_id' => 'DRV002',
-                'email' => 'karim.driver@vms.com',
+                'email' => 'karim.driver@vems.com',
                 'license_no' => 'DL-DRV-002',
                 'phone_suffix' => '004',
                 'blood_group' => 'AB+',
@@ -89,33 +92,35 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($seniorDrivers as $driverData) {
-            User::create([
-                'name' => $driverData['name'],
-                'username' => $driverData['username'],
-                'employee_id' => $driverData['employee_id'],
-                'email' => $driverData['email'],
-                'user_type' => 'driver',
-                'department_id' => 1, // Transport department
-                'official_phone' => '+880171100000' . $driverData['phone_suffix'],
-                'personal_phone' => '+880185500000' . $driverData['phone_suffix'],
-                'emergency_phone' => '+880199900000' . $driverData['phone_suffix'],
-                'emergency_contact_name' => $driverData['name'] . ' Emergency',
-                'emergency_contact_relation' => 'Family',
-                'driving_license_no' => $driverData['license_no'],
-                'license_class' => 'B',
-                'license_issue_date' => '2019-06-01',
-                'license_expiry_date' => '2027-06-01',
-                'driver_status' => 'available',
-                'present_address' => $driverData['address'],
-                'permanent_address' => $driverData['address'] . ' (Permanent)',
-                'joining_date' => '2022-03-01',
-                'blood_group' => $driverData['blood_group'],
-                'total_distance_covered' => rand(15000, 30000),
-                'total_trips_completed' => rand(150, 300),
-                'average_rating' => round(rand(40, 50) / 10, 1),
-                'status' => 'active',
-                'password' => Hash::make('password'),
-            ]);
+            User::updateOrCreate(
+                ['email' => $driverData['email']],
+                [
+                    'name' => $driverData['name'],
+                    'username' => $driverData['username'],
+                    'employee_id' => $driverData['employee_id'],
+                    'user_type' => 'driver',
+                    'department_id' => 1, // Transport department
+                    'official_phone' => '+880171100000' . $driverData['phone_suffix'],
+                    'personal_phone' => '+880185500000' . $driverData['phone_suffix'],
+                    'emergency_phone' => '+880199900000' . $driverData['phone_suffix'],
+                    'emergency_contact_name' => $driverData['name'] . ' Emergency',
+                    'emergency_contact_relation' => 'Family',
+                    'driving_license_no' => $driverData['license_no'],
+                    'license_class' => 'B',
+                    'license_issue_date' => '2019-06-01',
+                    'license_expiry_date' => '2027-06-01',
+                    'driver_status' => 'available',
+                    'present_address' => $driverData['address'],
+                    'permanent_address' => $driverData['address'] . ' (Permanent)',
+                    'joining_date' => '2022-03-01',
+                    'blood_group' => $driverData['blood_group'],
+                    'total_distance_covered' => rand(15000, 30000),
+                    'total_trips_completed' => rand(150, 300),
+                    'average_rating' => round(rand(40, 50) / 10, 1),
+                    'status' => 'active',
+                    'password' => Hash::make('password'),
+                ]
+            );
         }
 
         // Create Regular Drivers
@@ -124,7 +129,7 @@ class UserSeeder extends Seeder
                 'name' => 'Rahim Regular Driver',
                 'username' => 'rahim.driver',
                 'employee_id' => 'DRV003',
-                'email' => 'rahim.driver@vms.com',
+                'email' => 'rahim.driver@vems.com',
                 'license_no' => 'DL-DRV-003',
                 'phone_suffix' => '005',
                 'blood_group' => 'O-',
@@ -134,7 +139,7 @@ class UserSeeder extends Seeder
                 'name' => 'Hasan Regular Driver',
                 'username' => 'hasan.driver',
                 'employee_id' => 'DRV004',
-                'email' => 'hasan.driver@vms.com',
+                'email' => 'hasan.driver@vems.com',
                 'license_no' => 'DL-DRV-004',
                 'phone_suffix' => '006',
                 'blood_group' => 'A-',
@@ -143,33 +148,35 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($regularDrivers as $driverData) {
-            User::create([
-                'name' => $driverData['name'],
-                'username' => $driverData['username'],
-                'employee_id' => $driverData['employee_id'],
-                'email' => $driverData['email'],
-                'user_type' => 'driver',
-                'department_id' => 1, // Transport department
-                'official_phone' => '+880171100000' . $driverData['phone_suffix'],
-                'personal_phone' => '+880185500000' . $driverData['phone_suffix'],
-                'emergency_phone' => '+880199900000' . $driverData['phone_suffix'],
-                'emergency_contact_name' => $driverData['name'] . ' Emergency',
-                'emergency_contact_relation' => 'Family',
-                'driving_license_no' => $driverData['license_no'],
-                'license_class' => 'B',
-                'license_issue_date' => '2020-08-15',
-                'license_expiry_date' => '2028-08-15',
-                'driver_status' => 'available',
-                'present_address' => $driverData['address'],
-                'permanent_address' => $driverData['address'] . ' (Permanent)',
-                'joining_date' => '2023-01-15',
-                'blood_group' => $driverData['blood_group'],
-                'total_distance_covered' => rand(8000, 15000),
-                'total_trips_completed' => rand(80, 150),
-                'average_rating' => round(rand(35, 45) / 10, 1),
-                'status' => 'active',
-                'password' => Hash::make('password'),
-            ]);
+            User::updateOrCreate(
+                ['email' => $driverData['email']],
+                [
+                    'name' => $driverData['name'],
+                    'username' => $driverData['username'],
+                    'employee_id' => $driverData['employee_id'],
+                    'user_type' => 'driver',
+                    'department_id' => 1, // Transport department
+                    'official_phone' => '+880171100000' . $driverData['phone_suffix'],
+                    'personal_phone' => '+880185500000' . $driverData['phone_suffix'],
+                    'emergency_phone' => '+880199900000' . $driverData['phone_suffix'],
+                    'emergency_contact_name' => $driverData['name'] . ' Emergency',
+                    'emergency_contact_relation' => 'Family',
+                    'driving_license_no' => $driverData['license_no'],
+                    'license_class' => 'B',
+                    'license_issue_date' => '2020-08-15',
+                    'license_expiry_date' => '2028-08-15',
+                    'driver_status' => 'available',
+                    'present_address' => $driverData['address'],
+                    'permanent_address' => $driverData['address'] . ' (Permanent)',
+                    'joining_date' => '2023-01-15',
+                    'blood_group' => $driverData['blood_group'],
+                    'total_distance_covered' => rand(8000, 15000),
+                    'total_trips_completed' => rand(80, 150),
+                    'average_rating' => round(rand(35, 45) / 10, 1),
+                    'status' => 'active',
+                    'password' => Hash::make('password'),
+                ]
+            );
         }
 
         // Create Employees from different departments
@@ -178,7 +185,7 @@ class UserSeeder extends Seeder
                 'name' => 'John HR Employee',
                 'username' => 'john.hr',
                 'employee_id' => 'HR001',
-                'email' => 'john.hr@vms.com',
+                'email' => 'john.hr@vems.com',
                 'department_id' => 2, // HR department
                 'phone_suffix' => '007',
                 'address' => 'HR Staff Quarters, Dhaka'
@@ -187,7 +194,7 @@ class UserSeeder extends Seeder
                 'name' => 'Lisa Finance Employee',
                 'username' => 'lisa.finance',
                 'employee_id' => 'FIN001',
-                'email' => 'lisa.finance@vms.com',
+                'email' => 'lisa.finance@vems.com',
                 'department_id' => 5, // Finance department
                 'phone_suffix' => '008',
                 'address' => 'Finance Staff Area, Dhaka'
@@ -196,7 +203,7 @@ class UserSeeder extends Seeder
                 'name' => 'David Operations Employee',
                 'username' => 'david.operations',
                 'employee_id' => 'OPS001',
-                'email' => 'david.operations@vms.com',
+                'email' => 'david.operations@vems.com',
                 'department_id' => 4, // Operations department
                 'phone_suffix' => '009',
                 'address' => 'Operations Staff Area, Chittagong'
@@ -205,7 +212,7 @@ class UserSeeder extends Seeder
                 'name' => 'Maria Admin Employee',
                 'username' => 'maria.admin',
                 'employee_id' => 'ADM002',
-                'email' => 'maria.admin@vms.com',
+                'email' => 'maria.admin@vems.com',
                 'department_id' => 3, // Administration department
                 'phone_suffix' => '010',
                 'address' => 'Admin Staff Area, Sylhet'
@@ -213,25 +220,27 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($employees as $empData) {
-            User::create([
-                'name' => $empData['name'],
-                'username' => $empData['username'],
-                'employee_id' => $empData['employee_id'],
-                'email' => $empData['email'],
-                'user_type' => 'employee',
-                'department_id' => $empData['department_id'],
-                'official_phone' => '+880171100000' . $empData['phone_suffix'],
-                'personal_phone' => '+880185500000' . $empData['phone_suffix'],
-                'emergency_phone' => '+880199900000' . $empData['phone_suffix'],
-                'emergency_contact_name' => $empData['name'] . ' Emergency',
-                'emergency_contact_relation' => 'Family',
-                'present_address' => $empData['address'],
-                'permanent_address' => $empData['address'] . ' (Permanent)',
-                'joining_date' => '2023-' . str_pad(rand(1, 12), 2, '0', STR_PAD_LEFT) . '-' . str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT),
-                'blood_group' => ['A+', 'B+', 'AB+', 'O+', 'A-', 'B-', 'AB-', 'O-'][rand(0, 7)],
-                'status' => 'active',
-                'password' => Hash::make('password'),
-            ]);
+            User::updateOrCreate(
+                ['email' => $empData['email']],
+                [
+                    'name' => $empData['name'],
+                    'username' => $empData['username'],
+                    'employee_id' => $empData['employee_id'],
+                    'user_type' => 'employee',
+                    'department_id' => $empData['department_id'],
+                    'official_phone' => '+880171100000' . $empData['phone_suffix'],
+                    'personal_phone' => '+880185500000' . $empData['phone_suffix'],
+                    'emergency_phone' => '+880199900000' . $empData['phone_suffix'],
+                    'emergency_contact_name' => $empData['name'] . ' Emergency',
+                    'emergency_contact_relation' => 'Family',
+                    'present_address' => $empData['address'],
+                    'permanent_address' => $empData['address'] . ' (Permanent)',
+                    'joining_date' => '2023-' . str_pad(rand(1, 12), 2, '0', STR_PAD_LEFT) . '-' . str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT),
+                    'blood_group' => ['A+', 'B+', 'AB+', 'O+', 'A-', 'B-', 'AB-', 'O-'][rand(0, 7)],
+                    'status' => 'active',
+                    'password' => Hash::make('password'),
+                ]
+            );
         }
 
         // Assign Spatie Roles (if roles exist)
@@ -261,7 +270,7 @@ class UserSeeder extends Seeder
             // Roles might not exist yet, continue without assigning
         }
 
-        echo "VMS Users created successfully:\n";
+        echo "vems Users created successfully:\n";
         echo "- 1 Admin (admin/password)\n";
         echo "- 1 Transport Manager (sarah.manager/password)\n";
         echo "- 4 Drivers (ahmed.driver, karim.driver, rahim.driver, hasan.driver/password)\n";

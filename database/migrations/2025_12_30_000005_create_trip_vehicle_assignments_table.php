@@ -4,7 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('trip_vehicle_assignments', function (Blueprint $table) {
@@ -15,7 +19,7 @@ return new class extends Migration {
             $table->timestamp('unassigned_at')->nullable();
             $table->boolean('is_current')->default(true);
             $table->foreignId('assigned_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('reason')->nullable(); // 'initial', 'damaged', 'maintenance', 'breakdown', 'replacement'
+            $table->string('reason')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
 
@@ -24,6 +28,9 @@ return new class extends Migration {
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('trip_vehicle_assignments');

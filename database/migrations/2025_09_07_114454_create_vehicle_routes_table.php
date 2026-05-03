@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->text('remarks')->nullable();
+            $table->decimal('total_distance', 8, 2)->nullable();
             $table->timestamps();
         });
     }

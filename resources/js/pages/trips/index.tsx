@@ -2,10 +2,11 @@ import { ServerSideDataTable } from '@/base-components/base-data-table';
 import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, DataTableColumn, Trip } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Calendar, Car, CheckCircle, Clock, Edit, Eye, MapPin, Plus, Trash2, User, XCircle } from 'lucide-react';
+import { Calendar, Car, CheckCircle, Clock, Edit, Eye, FileText, MapPin, Plus, Trash2, TrendingUp, User, XCircle } from 'lucide-react';
 
 interface PaginatedTrips {
     data: Trip[];
@@ -31,9 +32,12 @@ interface TripsPageProps {
         search?: string;
         status?: string;
         schedule_type?: string;
+        trip_type?: string;
+        priority?: string;
         date_from?: string;
         date_to?: string;
         vehicle_id?: number;
+        department_id?: number;
         sort?: string;
         direction?: 'asc' | 'desc';
         per_page?: number;
@@ -45,195 +49,302 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Trips', href: '/trips' },
 ];
 
-const getStatusColor = (status: Trip['status']) => {
-    const colors = {
-        pending: 'bg-yellow-100 text-yellow-800',
-        approved: 'bg-blue-100 text-blue-800',
-        rejected: 'bg-red-100 text-red-800',
-        assigned: 'bg-cyan-100 text-cyan-800',
-        in_progress: 'bg-purple-100 text-purple-800',
-        completed: 'bg-green-100 text-green-800',
-        cancelled: 'bg-gray-100 text-gray-800',
+const getStatusBadge = (status: Trip['status']) => {
+    const config = {
+        pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+        approved: { label: 'Approved', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+        rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
+        assigned: { label: 'Assigned', className: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
+        in_progress: { label: 'In Progress', className: 'bg-purple-100 text-purple-800 border-purple-200' },
+        completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
+        cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800 border-gray-200' },
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    const { label, className } = config[status] || config.pending;
+    return <Badge className={className}>{label}</Badge>;
 };
 
-const getPriorityColor = (priority: Trip['priority']) => {
-    const colors = {
-        urgent: 'bg-red-100 text-red-800',
-        high: 'bg-orange-100 text-orange-800',
-        medium: 'bg-yellow-100 text-yellow-800',
-        low: 'bg-gray-100 text-gray-800',
+const getPriorityBadge = (priority: Trip['priority']) => {
+    const config = {
+        urgent: { label: 'Urgent', className: 'bg-red-100 text-red-800 border-red-300' },
+        high: { label: 'High', className: 'bg-orange-100 text-orange-800 border-orange-200' },
+        medium: { label: 'Medium', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+        low: { label: 'Low', className: 'bg-gray-100 text-gray-800 border-gray-200' },
     };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
+    const { label, className } = config[priority] || config.medium;
+    return <Badge variant="outline" className={className}>{label}</Badge>;
 };
 
 export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps) {
     const columns: DataTableColumn<Trip>[] = [
         {
             key: 'trip_number',
-            label: 'Trip #',
+            label: 'Trip Number',
             sortable: true,
             render: (value) => (
-                <span className="font-mono font-medium">{value}</span>
+                <span className="font-mono text-xs font-semibold text-blue-600">{value}</span>
             ),
         },
         {
             key: 'scheduled_date',
-            label: 'Date & Time',
+            label: 'Schedule',
             sortable: true,
             render: (_, row) => (
                 <div className="flex flex-col space-y-1">
-                    <div className="flex items-center text-sm">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(row.scheduled_date).toLocaleDateString()}
+                    <div className="flex items-center text-sm font-medium">
+                        <Calendar className="mr-1.5 h-3.5 w-3.5 text-gray-500" />
+                        {new Date(row.scheduled_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                        })}
                     </div>
                     <div className="flex items-center text-xs text-gray-500">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="mr-1.5 h-3 w-3" />
                         {row.scheduled_start_time} - {row.scheduled_end_time}
                     </div>
                 </div>
             ),
         },
         {
+            key: 'trip_type',
+            label: 'Type',
+            render: (value, row) => (
+                <div className="flex flex-col space-y-1">
+                    {value && (
+                        <Badge variant="outline" className="text-xs font-medium capitalize">
+                            {value.replace('-', ' ')}
+                        </Badge>
+                    )}
+                    <span className="text-xs text-gray-500 capitalize">
+                        {row.schedule_type.replace('-', ' ')}
+                    </span>
+                </div>
+            ),
+        },
+        {
             key: 'purpose',
-            label: 'Purpose',
+            label: 'Purpose & Details',
             sortable: true,
             render: (value, row) => (
-                <div className="flex flex-col">
-                    <span className="font-medium">{value}</span>
-                    <span className="text-xs text-gray-500 capitalize">{row.schedule_type.replace('-', ' ')}</span>
+                <div className="max-w-xs">
+                    <p className="text-sm font-medium line-clamp-1">{value}</p>
+                    {row.start_location && row.end_location && (
+                        <div className="mt-1 flex items-center text-xs text-gray-500">
+                            <MapPin className="mr-1 h-3 w-3" />
+                            <span className="line-clamp-1">
+                                {row.start_location} → {row.end_location}
+                            </span>
+                        </div>
+                    )}
                 </div>
             ),
         },
         {
             key: 'vehicle_id',
             label: 'Vehicle',
-            render: (_, row) => (
+            render: (_, row) =>
                 row.vehicle ? (
                     <div className="flex items-center space-x-2">
                         <Car className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{row.vehicle.registration_number}</span>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium">{row.vehicle.registration_number}</span>
+                            <span className="text-xs text-gray-500">
+                                {row.vehicle.brand} {row.vehicle.model}
+                            </span>
+                        </div>
                     </div>
                 ) : (
-                    <span className="text-sm text-gray-400">Not assigned</span>
-                )
-            ),
+                    <span className="text-sm text-gray-400 italic">Not assigned</span>
+                ),
         },
         {
-            key: 'requested_by',
-            label: 'Requester',
-            render: (_, row) => (
-                <div className="flex items-center space-x-2">
-                    <User className="h-3 w-3 text-gray-400" />
-                    <span className="text-sm">{row.requester?.name}</span>
-                </div>
-            ),
+            key: 'driver_id',
+            label: 'Driver',
+            render: (_, row) =>
+                row.driver ? (
+                    <div className="flex items-center space-x-2">
+                        <User className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-sm">{row.driver.name}</span>
+                    </div>
+                ) : (
+                    <span className="text-sm text-gray-400 italic">Not assigned</span>
+                ),
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            render: (_, row) =>
+                row.department ? (
+                    <span className="text-sm">{row.department.name}</span>
+                ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                ),
         },
         {
             key: 'status',
             label: 'Status',
             sortable: true,
-            render: (value) => (
-                <Badge className={getStatusColor(value as Trip['status'])}>
-                    {value}
-                </Badge>
-            ),
+            render: (value) => getStatusBadge(value as Trip['status']),
         },
         {
             key: 'priority',
             label: 'Priority',
-            render: (value) => (
-                <Badge className={getPriorityColor(value as Trip['priority'])}>
-                    {value}
-                </Badge>
-            ),
+            render: (value) => getPriorityBadge(value as Trip['priority']),
         },
         {
-            key: 'actions' as keyof Trip,
+            key: 'id',
             label: 'Actions',
             render: (_, row) => (
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2">
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            router.visit(route('trips.show', row.id));
-                        }}
-                        title="View trip"
+                        onClick={() => router.visit(route('trips.show', row.id))}
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
-                    {['pending', 'approved'].includes(row.status) && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                router.visit(route('trips.edit', row.id));
-                            }}
-                            title="Edit trip"
-                        >
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                    )}
-                    {row.status === 'pending' && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Delete trip "${row.trip_number}"?`)) {
-                                    router.delete(route('trips.destroy', row.id));
-                                }
-                            }}
-                            title="Delete trip"
-                            className="text-destructive hover:text-destructive"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    )}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.visit(route('trips.edit', row.id))}
+                    >
+                        <Edit className="h-4 w-4" />
+                    </Button>
                 </div>
             ),
         },
     ];
 
-    const handleRowClick = (trip: Trip) => {
-        router.visit(route('trips.show', trip.id));
-    };
+    const filters = [
+        {
+            key: 'status',
+            label: 'Status',
+            options: [
+                { label: 'All', value: '' },
+                { label: 'Pending', value: 'pending' },
+                { label: 'Approved', value: 'approved' },
+                { label: 'In Progress', value: 'in_progress' },
+                { label: 'Completed', value: 'completed' },
+                { label: 'Cancelled', value: 'cancelled' },
+            ],
+            type: 'select' as const,
+        },
+        {
+            key: 'priority',
+            label: 'Priority',
+            options: [
+                { label: 'All', value: '' },
+                { label: 'Urgent', value: 'urgent' },
+                { label: 'High', value: 'high' },
+                { label: 'Medium', value: 'medium' },
+                { label: 'Low', value: 'low' },
+            ],
+            type: 'select' as const,
+        },
+        {
+            key: 'schedule_type',
+            label: 'Schedule Type',
+            options: [
+                { label: 'All', value: '' },
+                { label: 'Pick & Drop', value: 'pick-and-drop' },
+                { label: 'Engineer', value: 'engineer' },
+                { label: 'Training', value: 'training' },
+                { label: 'Ad-hoc', value: 'adhoc' },
+                { label: 'Reposition', value: 'reposition' },
+            ],
+            type: 'select' as const,
+        },
+        {
+            key: 'trip_type',
+            label: 'Trip Type',
+            options: [
+                { label: 'All', value: '' },
+                { label: 'Inspection', value: 'inspection' },
+                { label: 'Pick-up', value: 'pick-up' },
+                { label: 'Drop-off', value: 'drop-off' },
+                { label: 'Training', value: 'training' },
+                { label: 'Complaints', value: 'complaints' },
+                { label: 'CVV', value: 'CVV' },
+                { label: 'Incident Inspection', value: 'Incident Inspection' },
+                { label: 'Officials', value: 'officials' },
+                { label: 'Assigned', value: 'Assigned' },
+            ],
+            type: 'select' as const,
+        },
+    ];
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
             <Head title="Trips" />
 
             <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Total</p>
+                                <p className="text-2xl font-bold">{stats.total}</p>
+                            </div>
+                            <FileText className="h-8 w-8 text-gray-400" />
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Today</p>
+                                <p className="text-2xl font-bold text-blue-600">{stats.today}</p>
+                            </div>
+                            <Calendar className="h-8 w-8 text-blue-400" />
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Pending</p>
+                                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                            </div>
+                            <Clock className="h-8 w-8 text-yellow-400" />
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Approved</p>
+                                <p className="text-2xl font-bold text-blue-600">{stats.approved}</p>
+                            </div>
+                            <CheckCircle className="h-8 w-8 text-blue-400" />
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                                <p className="text-2xl font-bold text-purple-600">{stats.in_progress}</p>
+                            </div>
+                            <TrendingUp className="h-8 w-8 text-purple-400" />
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Completed</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                            </div>
+                            <CheckCircle className="h-8 w-8 text-green-400" />
+                        </div>
+                    </Card>
+                </div>
+
+                {/* Data Table */}
                 <PageHeader
-                    title="Trips Management"
-                    description="Manage vehicle trips, schedules, and assignments."
+                    title="Trip Management"
+                    description="Manage and track all vehicle trips"
                     actions={[
                         {
                             label: 'Create Trip',
-                            icon: <Plus className="mr-2 h-4 w-4" />,
+                            icon: <Plus className="h-4 w-4" />,
                             href: route('trips.create'),
-                        },
-                    ]}
-                    stats={[
-                        {
-                            label: 'Total Trips',
-                            value: stats.total,
-                        },
-                        {
-                            label: 'Pending Approval',
-                            value: stats.pending,
-                        },
-                        {
-                            label: 'In Progress',
-                            value: stats.in_progress,
-                        },
-                        {
-                            label: 'Today',
-                            value: stats.today,
                         },
                     ]}
                 />
@@ -243,10 +354,9 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
                     columns={columns}
                     queryParams={queryParams}
                     filterOptions={{}}
-                    filters={[]}
-                    searchPlaceholder="Search trips..."
+                    filters={filters}
+                    searchPlaceholder="Search by trip number, purpose, location..."
                     exportable={false}
-                    onRowClick={handleRowClick}
                     emptyMessage="No trips found. Create your first trip to get started."
                 />
             </div>

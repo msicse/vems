@@ -25,7 +25,7 @@ class RolePermissionSeeder extends Seeder
             'delete-vehicles',
             'assign-vehicles',
             'manage-vehicle-documents',
-            
+
             // Trip Management
             'view-trips',
             'create-trips',
@@ -36,7 +36,7 @@ class RolePermissionSeeder extends Seeder
             'assign-drivers',
             'check-in-trips',
             'check-out-trips',
-            
+
             // Driver Management
             'view-drivers',
             'create-drivers',
@@ -44,14 +44,14 @@ class RolePermissionSeeder extends Seeder
             'delete-drivers',
             'manage-driver-documents',
             'view-driver-performance',
-            
+
             // Scheduling
             'view-schedules',
             'create-schedules',
             'edit-schedules',
             'delete-schedules',
             'manage-recurring-schedules',
-            
+
             // Maintenance
             'view-maintenance',
             'create-maintenance',
@@ -59,28 +59,28 @@ class RolePermissionSeeder extends Seeder
             'delete-maintenance',
             'schedule-maintenance',
             'approve-maintenance',
-            
+
             // Fuel Management
             'view-fuel-logs',
             'create-fuel-logs',
             'edit-fuel-logs',
             'delete-fuel-logs',
             'manage-fuel-budget',
-            
+
             // Reports & Analytics
             'view-reports',
             'create-reports',
             'export-reports',
             'view-analytics',
             'view-cost-analysis',
-            
+
             // Department Management
             'view-departments',
             'create-departments',
             'edit-departments',
             'delete-departments',
             'manage-department-budget',
-            
+
             // User Management
             'view-users',
             'create-users',
@@ -88,19 +88,19 @@ class RolePermissionSeeder extends Seeder
             'delete-users',
             'manage-user-roles',
             'view-user-activity',
-            
+
             // System Settings
             'view-settings',
             'edit-settings',
             'manage-system-config',
             'view-system-logs',
             'backup-system',
-            
+
             // Notifications
             'view-notifications',
             'send-notifications',
             'manage-notification-settings',
-            
+
             // GPS Tracking (Optional)
             'view-live-tracking',
             'manage-tracking-settings',
@@ -108,54 +108,54 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create Roles and Assign Permissions
 
         // 1. Super Admin - Full Access
-        $superAdmin = Role::create(['name' => 'super-admin']);
-        $superAdmin->givePermissionTo(Permission::all());
+        $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
+        $superAdmin->syncPermissions(Permission::all());
 
         // 2. Transport Manager - Fleet Management
-        $transportManager = Role::create(['name' => 'transport-manager']);
-        $transportManager->givePermissionTo([
+        $transportManager = Role::firstOrCreate(['name' => 'transport-manager', 'guard_name' => 'web']);
+        $transportManager->syncPermissions([
             // Vehicle Management
-            'view-vehicles', 'create-vehicles', 'edit-vehicles', 'delete-vehicles', 
+            'view-vehicles', 'create-vehicles', 'edit-vehicles', 'delete-vehicles',
             'assign-vehicles', 'manage-vehicle-documents',
-            
+
             // Trip Management
             'view-trips', 'create-trips', 'edit-trips', 'approve-trips', 'reject-trips',
             'assign-drivers', 'check-in-trips', 'check-out-trips',
-            
+
             // Driver Management
             'view-drivers', 'create-drivers', 'edit-drivers', 'manage-driver-documents',
             'view-driver-performance',
-            
+
             // Scheduling
             'view-schedules', 'create-schedules', 'edit-schedules', 'delete-schedules',
             'manage-recurring-schedules',
-            
+
             // Maintenance
             'view-maintenance', 'create-maintenance', 'edit-maintenance', 'schedule-maintenance',
             'approve-maintenance',
-            
+
             // Fuel Management
             'view-fuel-logs', 'create-fuel-logs', 'edit-fuel-logs', 'manage-fuel-budget',
-            
+
             // Reports
             'view-reports', 'create-reports', 'export-reports', 'view-analytics', 'view-cost-analysis',
-            
+
             // GPS Tracking
             'view-live-tracking', 'manage-tracking-settings', 'view-route-history',
-            
+
             // Notifications
             'view-notifications', 'send-notifications', 'manage-notification-settings',
         ]);
 
         // 3. Assistant Transport Manager - Limited Management
-        $assistantTransportManager = Role::create(['name' => 'assistant-transport-manager']);
-        $assistantTransportManager->givePermissionTo([
+        $assistantTransportManager = Role::firstOrCreate(['name' => 'assistant-transport-manager', 'guard_name' => 'web']);
+        $assistantTransportManager->syncPermissions([
             'view-vehicles', 'edit-vehicles', 'assign-vehicles',
             'view-trips', 'create-trips', 'edit-trips', 'approve-trips', 'assign-drivers',
             'view-drivers', 'edit-drivers', 'view-driver-performance',
@@ -168,16 +168,16 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // 4. Department Head - Department-specific Approval
-        $departmentHead = Role::create(['name' => 'department-head']);
-        $departmentHead->givePermissionTo([
+        $departmentHead = Role::firstOrCreate(['name' => 'department-head', 'guard_name' => 'web']);
+        $departmentHead->syncPermissions([
             'view-vehicles', 'view-trips', 'create-trips', 'approve-trips',
             'view-drivers', 'view-schedules', 'view-reports',
             'view-notifications', 'manage-department-budget',
         ]);
 
         // 5. Transport Officer - Operations
-        $transportOfficer = Role::create(['name' => 'transport-officer']);
-        $transportOfficer->givePermissionTo([
+        $transportOfficer = Role::firstOrCreate(['name' => 'transport-officer', 'guard_name' => 'web']);
+        $transportOfficer->syncPermissions([
             'view-vehicles', 'edit-vehicles', 'assign-vehicles',
             'view-trips', 'create-trips', 'edit-trips', 'assign-drivers',
             'check-in-trips', 'check-out-trips',
@@ -191,8 +191,8 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // 6. Admin Officer - Documentation & Admin
-        $adminOfficer = Role::create(['name' => 'admin-officer']);
-        $adminOfficer->givePermissionTo([
+        $adminOfficer = Role::firstOrCreate(['name' => 'admin-officer', 'guard_name' => 'web']);
+        $adminOfficer->syncPermissions([
             'view-vehicles', 'manage-vehicle-documents',
             'view-trips', 'create-trips',
             'view-drivers', 'manage-driver-documents',
@@ -203,8 +203,8 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // 7. Senior Driver - Advanced Driver Privileges
-        $seniorDriver = Role::create(['name' => 'senior-driver']);
-        $seniorDriver->givePermissionTo([
+        $seniorDriver = Role::firstOrCreate(['name' => 'senior-driver', 'guard_name' => 'web']);
+        $seniorDriver->syncPermissions([
             'view-vehicles', 'view-trips', 'check-in-trips', 'check-out-trips',
             'view-drivers', 'view-schedules',
             'view-fuel-logs', 'create-fuel-logs',
@@ -212,31 +212,31 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // 8. Driver - Basic Driver Access
-        $driver = Role::create(['name' => 'driver']);
-        $driver->givePermissionTo([
+        $driver = Role::firstOrCreate(['name' => 'driver', 'guard_name' => 'web']);
+        $driver->syncPermissions([
             'view-trips', 'check-in-trips', 'check-out-trips',
             'view-schedules', 'view-fuel-logs', 'create-fuel-logs',
             'view-notifications',
         ]);
 
         // 9. Junior Driver - Limited Access
-        $juniorDriver = Role::create(['name' => 'junior-driver']);
-        $juniorDriver->givePermissionTo([
+        $juniorDriver = Role::firstOrCreate(['name' => 'junior-driver', 'guard_name' => 'web']);
+        $juniorDriver->syncPermissions([
             'view-trips', 'check-in-trips', 'check-out-trips',
             'view-schedules', 'view-notifications',
         ]);
 
         // 10. Senior Executive - Priority Access
-        $seniorExecutive = Role::create(['name' => 'senior-executive']);
-        $seniorExecutive->givePermissionTo([
+        $seniorExecutive = Role::firstOrCreate(['name' => 'senior-executive', 'guard_name' => 'web']);
+        $seniorExecutive->syncPermissions([
             'view-vehicles', 'view-trips', 'create-trips',
             'view-schedules', 'view-reports',
             'view-notifications',
         ]);
 
         // 11. Executive - Basic Employee Access
-        $executive = Role::create(['name' => 'executive']);
-        $executive->givePermissionTo([
+        $executive = Role::firstOrCreate(['name' => 'executive', 'guard_name' => 'web']);
+        $executive->syncPermissions([
             'view-trips', 'create-trips', 'view-schedules',
             'view-notifications',
         ]);

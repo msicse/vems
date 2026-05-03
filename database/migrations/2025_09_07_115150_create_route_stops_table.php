@@ -18,6 +18,8 @@ return new class extends Migration
             $table->integer('stop_order');
             $table->time('arrival_time')->nullable();
             $table->time('departure_time')->nullable();
+            $table->decimal('distance_from_previous', 8, 2)->nullable();
+            $table->decimal('cumulative_distance', 8, 2)->nullable();
             $table->timestamps();
         });
     }

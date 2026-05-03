@@ -260,3 +260,226 @@ export interface DataTableProps<T = any> {
     onRowClick?: (row: T) => void;
 }
 
+// Trip Types
+export interface Trip {
+    id: number;
+    trip_number: string;
+    vehicle_route_id?: number;
+    vehicle_id?: number;
+    driver_id?: number;
+    department_id?: number;
+    requested_by: number;
+    approved_by?: number;
+    purpose: string;
+    trip_type?: 'inspection' | 'pick-up' | 'drop-off' | 'training' | 'complaints' | 'CVV' | 'Incident Inspection' | 'officials' | 'Assigned';
+    remarks?: string;
+    description?: string;
+    schedule_type: 'pick-and-drop' | 'engineer' | 'training' | 'adhoc' | 'reposition';
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    scheduled_date: string;
+    scheduled_start_time: string;
+    scheduled_end_time: string;
+    start_location?: string;
+    end_location?: string;
+    is_return: boolean;
+    is_completed: boolean;
+    is_recurring: boolean;
+    recurring_group_id?: number;
+    recurring_start_date?: string;
+    recurring_end_date?: string;
+    original_trip_id?: number;
+    start_time?: string;
+    end_time?: string;
+    actual_start_time?: string;
+    actual_end_time?: string;
+    odometer_start?: number;
+    odometer_end?: number;
+    distance_traveled?: number;
+    actual_duration?: number;
+    fuel_consumed?: number;
+    fuel_cost?: number;
+    other_costs?: number;
+    total_cost?: number;
+    status: 'pending' | 'approved' | 'rejected' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+    cancellation_reason?: 'passenger_no_show' | 'vehicle_breakdown' | 'driver_unavailable' | 'route_blocked' | 'weather_conditions' | 'emergency' | 'other';
+    cancellation_notes?: string;
+    cancelled_by?: number;
+    cancelled_at?: string;
+    multiple_departments?: number[];
+    comments?: string;
+    driver_rating?: number;
+    vehicle_rating?: number;
+    feedback?: string;
+    rejection_reason?: string;
+    notes?: string;
+    trip_documents?: Array<{
+        name: string;
+        path: string;
+        uploaded_at: string;
+    }>;
+    created_at: string;
+    updated_at: string;
+    // Relationships
+    requester?: User;
+    approver?: User;
+    vehicle?: Vehicle;
+    driver?: User;
+    department?: Department;
+    passengers?: TripPassenger[];
+    trip_stops?: TripStop[];
+    audit_logs?: TripAuditLog[];
+    vehicle_assignments?: TripVehicleAssignment[];
+    route_assignments?: TripRouteAssignment[];
+    recurring_group?: TripRecurringGroup;
+    original_trip?: Trip;
+}
+
+export interface TripPassenger {
+    id: number;
+    trip_id: number;
+    user_id: number;
+    pickup_stop_id?: number;
+    dropoff_stop_id?: number;
+    boarding_status?: 'pending' | 'boarded' | 'no_show' | 'cancelled';
+    boarded_at?: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    user?: User;
+    pickup_stop?: Stop;
+    dropoff_stop?: Stop;
+}
+
+export interface TripStop {
+    id: number;
+    trip_id: number;
+    stop_id: number;
+    factory_id?: number;
+    stop_order: number;
+    estimated_arrival?: string;
+    actual_arrival?: string;
+    departure_time?: string;
+    is_destination: boolean;
+    visit_purpose?: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    stop?: Stop;
+    factory?: Factory;
+}
+
+export interface TripRecurringGroup {
+    id: number;
+    group_name?: string;
+    created_by: number;
+    start_date: string;
+    end_date: string;
+    total_trips: number;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    creator?: User;
+    trips?: Trip[];
+}
+
+export interface Factory {
+    id: number;
+    name: string;
+    code?: string;
+    address?: string;
+    contact_person?: string;
+    contact_phone?: string;
+    latitude?: number;
+    longitude?: number;
+    status: 'active' | 'inactive';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TripAuditLog {
+    id: number;
+    trip_id: number;
+    user_id: number;
+    action: string;
+    old_values?: Record<string, any>;
+    new_values?: Record<string, any>;
+    reason?: string;
+    created_at: string;
+    updated_at: string;
+    user?: User;
+}
+
+export interface TripVehicleAssignment {
+    id: number;
+    trip_id: number;
+    vehicle_id: number;
+    assigned_by: number;
+    assigned_at: string;
+    is_current: boolean;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    vehicle?: Vehicle;
+    assigned_by_user?: User;
+}
+
+export interface TripRouteAssignment {
+    id: number;
+    trip_id: number;
+    vehicle_route_id: number;
+    assigned_by: number;
+    assigned_at: string;
+    is_current: boolean;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    vehicle_route?: VehicleRoute;
+    assigned_by_user?: User;
+}
+
+export interface Department {
+    id: number;
+    name: string;
+    code?: string;
+    description?: string;
+    status: 'active' | 'inactive';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Stop {
+    id: number;
+    name: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    type: 'pickup' | 'dropoff' | 'both';
+    status: 'active' | 'inactive';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface VehicleRoute {
+    id: number;
+    name: string;
+    code?: string;
+    description?: string;
+    total_distance?: number;
+    estimated_duration?: number;
+    status: 'active' | 'inactive';
+    created_at: string;
+    updated_at: string;
+    stops?: RouteStop[];
+}
+
+export interface RouteStop {
+    id: number;
+    vehicle_route_id: number;
+    stop_id: number;
+    sequence: number;
+    distance_from_previous?: number;
+    estimated_time_from_previous?: number;
+    created_at: string;
+    updated_at: string;
+    stop?: Stop;
+}

@@ -11,7 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
+        Schema::create('vendors', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->text('address')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
+            $table->string('website')->nullable();
+            $table->text('description')->nullable();
+
+            // Document fields
             $table->string('trade_license')->nullable();
             $table->string('trade_license_file')->nullable();
             $table->string('tin')->nullable();
@@ -21,6 +30,9 @@ return new class extends Migration
             $table->string('tax_return')->nullable();
             $table->string('tax_return_file')->nullable();
             $table->text('bank_details')->nullable();
+
+            $table->string('status')->default('active');
+            $table->timestamps();
         });
     }
 
@@ -29,16 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
-            $table->dropColumn('trade_license');
-            $table->dropColumn('trade_license_file');
-            $table->dropColumn('tin');
-            $table->dropColumn('tin_file');
-            $table->dropColumn('bin');
-            $table->dropColumn('bin_file');
-            $table->dropColumn('tax_return');
-            $table->dropColumn('tax_return_file');
-            $table->dropColumn('bank_details');
-        });
+        Schema::dropIfExists('vendors');
     }
 };
