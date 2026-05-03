@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import type { Config } from 'ziggy-js';
 
 export interface BreadcrumbItem {
     title: string;
@@ -10,6 +11,28 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    children?: NavItem[];
+}
+
+export interface Auth {
+    user: User;
+    permissions?: string[];
+    roles?: string[];
+}
+
+export interface SharedData {
+    name: string;
+    quote: { message: string; author: string };
+    auth: Auth;
+    ziggy: Config & { location: string };
+    sidebarOpen: boolean;
+    flash: {
+        success?: string;
+        error?: string;
+        warning?: string;
+        info?: string;
+    };
+    [key: string]: unknown;
 }
 
 export interface PaginatedData<T> {
@@ -160,6 +183,11 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    username?: string;
+    employee_id?: string;
+    official_phone?: string;
+    personal_phone?: string;
+    emergency_phone?: string;
     user_type: string;
     status: string;
     area?: string;
@@ -244,12 +272,18 @@ export interface Trip {
     requested_by: number;
     approved_by: number | null;
     purpose: string;
+    team_number?: string | null;
+    trip_type?: 'inspection' | 'pick-up' | 'drop-off' | 'training' | 'complaints' | 'CVV' | 'Incident Inspection' | 'officials' | 'Assigned' | null;
+    remarks?: string | null;
     description: string | null;
     schedule_type: 'pick-and-drop' | 'engineer' | 'training' | 'adhoc' | 'reposition';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     scheduled_date: string;
     scheduled_start_time: string;
     scheduled_end_time: string;
+    start_location?: string | null;
+    end_location?: string | null;
+    is_return?: boolean;
     actual_start_time: string | null;
     actual_end_time: string | null;
     odometer_start: number | null;
@@ -261,6 +295,7 @@ export interface Trip {
     other_costs: number | null;
     total_cost: number | null;
     status: 'pending' | 'approved' | 'rejected' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+    comments?: string | null;
     driver_rating: number | null;
     vehicle_rating: number | null;
     feedback: string | null;
@@ -274,6 +309,9 @@ export interface Trip {
     approver?: User;
     driver?: User;
     passengers?: TripPassenger[];
+    factories?: Array<{ id: number; name: string }>;
+    departments?: Array<{ id: number; name: string; pivot?: { count?: number } }>;
+    logistics?: Array<{ id: number; name: string }>;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -292,8 +330,37 @@ export interface TripPassenger {
     user?: User;
     pickup_stop?: Stop;
     dropoff_stop?: Stop;
+    passenger_events?: TripPassengerEvent[];
     created_at: string;
     updated_at: string;
+}
+
+export interface TripPassengerEvent {
+    id: number;
+    trip_passenger_id: number;
+    trip_id: number;
+    user_id: number;
+    event_type: 'check_in' | 'check_out' | 'no_show' | 'manual_override' | 'correction';
+    event_time: string;
+    stop_id?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    gps_accuracy_meters?: number | null;
+    ip_address?: string | null;
+    area_name?: string | null;
+    source?: string | null;
+    actor_user_id?: number | null;
+    device_id?: string | null;
+    idempotency_key?: string | null;
+    is_valid: boolean;
+    voided_at?: string | null;
+    void_reason?: string | null;
+    superseded_by_event_id?: number | null;
+    metadata?: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+    stop?: Stop;
+    actor?: User;
 }
 
 export interface DataTableColumn<T = any> {

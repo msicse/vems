@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Trip management routes
     Route::post('/trips/recurring', [TripController::class, 'storeRecurring'])->name('trips.store-recurring');
+    Route::get('/trips/passenger-events', [TripController::class, 'passengerEvents'])->name('trips.passenger-events');
     Route::resource('trips', TripController::class);
     Route::post('/trips/{trip}/approve', [TripController::class, 'approve'])->name('trips.approve');
     Route::post('/trips/{trip}/reject', [TripController::class, 'reject'])->name('trips.reject');
@@ -99,6 +100,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/trips/{trip}/complete', [TripController::class, 'complete'])->name('trips.complete');
     Route::post('/trips/{trip}/cancel', [TripController::class, 'cancel'])->name('trips.cancel');
     Route::post('/trips/{trip}/reassign-vehicle', [TripController::class, 'reassignVehicle'])->name('trips.reassign-vehicle');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-in', [TripController::class, 'checkInPassenger'])->name('trips.passengers.check-in');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-out', [TripController::class, 'checkOutPassenger'])->name('trips.passengers.check-out');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/no-show', [TripController::class, 'markPassengerNoShow'])->name('trips.passengers.no-show');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/events/{tripPassengerEvent}/correct', [TripController::class, 'correctPassengerEvent'])->name('trips.passengers.events.correct');
 
     // Role and Permission management routes
     Route::resource('roles', RoleController::class);

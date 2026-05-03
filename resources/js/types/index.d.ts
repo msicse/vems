@@ -3,6 +3,8 @@ import type { Config } from 'ziggy-js';
 
 export interface Auth {
     user: User;
+    permissions?: string[];
+    roles?: string[];
 }
 
 export interface BreadcrumbItem {
@@ -20,6 +22,7 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    children?: NavItem[];
 }
 
 export interface SharedData {
@@ -340,14 +343,44 @@ export interface TripPassenger {
     user_id: number;
     pickup_stop_id?: number;
     dropoff_stop_id?: number;
-    boarding_status?: 'pending' | 'boarded' | 'no_show' | 'cancelled';
+    status?: 'pending' | 'confirmed' | 'boarded' | 'completed' | 'cancelled' | 'no_show';
     boarded_at?: string;
+    dropped_at?: string;
     notes?: string;
     created_at: string;
     updated_at: string;
     user?: User;
     pickup_stop?: Stop;
     dropoff_stop?: Stop;
+    passenger_events?: TripPassengerEvent[];
+}
+
+export interface TripPassengerEvent {
+    id: number;
+    trip_passenger_id: number;
+    trip_id: number;
+    user_id: number;
+    event_type: 'check_in' | 'check_out' | 'no_show' | 'manual_override' | 'correction';
+    event_time: string;
+    stop_id?: number;
+    latitude?: number;
+    longitude?: number;
+    gps_accuracy_meters?: number;
+    ip_address?: string;
+    area_name?: string;
+    source?: string;
+    actor_user_id?: number;
+    device_id?: string;
+    idempotency_key?: string;
+    is_valid: boolean;
+    voided_at?: string;
+    void_reason?: string;
+    superseded_by_event_id?: number;
+    metadata?: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+    stop?: Stop;
+    actor?: User;
 }
 
 export interface TripStop {

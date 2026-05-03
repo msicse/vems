@@ -3,19 +3,103 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
+use App\Models\TripPassenger;
+use App\Models\TripPassengerEvent;
 use App\Models\Vehicle;
 use App\Models\VehicleRoute;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\Factory;
 use App\Models\Logistics;
-use App\Models\Stop;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
 class TripController extends Controller
 {
+    /**
+     * Display a cross-trip passenger events log
+     */
+    public function passengerEvents(Request $request)
+    {
+        $query = TripPassengerEvent::with([
+            'trip:id,trip_number,scheduled_date,status',
+            'user:id,name,employee_id',
+            'stop:id,name',
+            'actor:id,name',
+        ]);
+
+        if ($request->filled('event_type')) {
+            $query->where('event_type', $request->event_type);
+        }
+
+        if ($request->filled('validity')) {
+            $query->where('is_valid', $request->validity === 'valid');
+        }
+
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
+
+        if ($request->filled('trip_id')) {
+            $query->where('trip_id', $request->trip_id);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('event_time', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('event_time', '<=', $request->date_to);
+        }
+
+        if ($request->filled('area')) {
+            $query->where('area_name', 'like', '%' . $request->area . '%');
+        }
+
+        $sortColumn = in_array($request->get('sort'), ['event_time', 'event_type', 'source', 'area_name'])
+            ? $request->get('sort')
+            : 'event_time';
+        $sortDirection = $request->get('direction', 'desc') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sortColumn, $sortDirection);
+
+        $events = $query->paginate($request->get('per_page', 20))->withQueryString();
+
+        // Summary stats
+        $stats = [
+            'total'          => TripPassengerEvent::count(),
+            'check_in'       => TripPassengerEvent::where('event_type', 'check_in')->count(),
+            'check_out'      => TripPassengerEvent::where('event_type', 'check_out')->count(),
+            'no_show'        => TripPassengerEvent::where('event_type', 'no_show')->count(),
+            'voided'         => TripPassengerEvent::where('is_valid', false)->count(),
+            'corrections'    => TripPassengerEvent::where('event_type', 'correction')->count(),
+        ];
+
+        // Unique sources for filter dropdown
+        $sources = TripPassengerEvent::select('source')
+            ->distinct()
+            ->whereNotNull('source')
+            ->pluck('source');
+
+        // Recent trips for filter dropdown
+        $trips = Trip::select('id', 'trip_number', 'scheduled_date')
+            ->orderByDesc('scheduled_date')
+            ->limit(100)
+            ->get();
+
+        return Inertia::render('trips/passenger-events', [
+            'events'      => $events,
+            'stats'       => $stats,
+            'sources'     => $sources,
+            'trips'       => $trips,
+            'queryParams' => $request->only(['event_type', 'validity', 'source', 'trip_id', 'user_id', 'date_from', 'date_to', 'area', 'sort', 'direction', 'per_page']),
+        ]);
+    }
+
     /**
      * Display a listing of trips
      */
@@ -370,6 +454,8 @@ class TripController extends Controller
             'passengers.user',
             'passengers.pickupStop',
             'passengers.dropoffStop',
+            'passengers.passengerEvents.actor',
+            'passengers.passengerEvents.stop',
             'vehicleAssignments.vehicle',
             'vehicleAssignments.assignedBy',
             'logistics',
@@ -603,13 +689,13 @@ class TripController extends Controller
         }
 
         $validated = $request->validate([
-            'odometer_start' => 'required|numeric|min:0',
+            'odometer_start' => 'nullable|numeric|min:0',
         ]);
 
         $trip->update([
             'status' => 'in_progress',
             'actual_start_time' => now(),
-            'odometer_start' => $validated['odometer_start'],
+            'odometer_start' => $validated['odometer_start'] ?? null,
         ]);
 
         return back()->with('success', 'Trip started successfully!');
@@ -669,6 +755,114 @@ class TripController extends Controller
         return back()->with('success', 'Trip cancelled.');
     }
 
+    public function checkInPassenger(Request $request, Trip $trip, TripPassenger $tripPassenger)
+    {
+        // Authorize the action
+        $this->authorize('capture-passenger-attendance');
+
+        $this->ensurePassengerBelongsToTrip($trip, $tripPassenger);
+        $this->ensureTripAcceptsAttendance($trip);
+
+        if (!in_array($tripPassenger->status, ['pending', 'no_show'])) {
+            return back()->with('error', 'Passenger has already checked in.');
+        }
+
+        $validated = $request->validate([
+            'event_time' => 'nullable|date',
+            'stop_id' => 'nullable|exists:stops,id',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'gps_accuracy_meters' => 'nullable|numeric|min:0',
+            'area_name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'idempotency_key' => 'nullable|string|max:255',
+        ]);
+
+        $tripPassenger->markAsBoarded($this->buildAttendanceAttributes($request, $tripPassenger, $validated, 'check_in'));
+
+        return back()->with('success', 'Passenger checked in successfully.');
+    }
+
+    public function checkOutPassenger(Request $request, Trip $trip, TripPassenger $tripPassenger)
+    {
+        // Authorize the action
+        $this->authorize('capture-passenger-attendance');
+
+        $this->ensurePassengerBelongsToTrip($trip, $tripPassenger);
+        $this->ensureTripAcceptsAttendance($trip);
+
+        if ($tripPassenger->status !== 'boarded') {
+            return back()->with('error', 'Passenger must be checked in before checking out.');
+        }
+
+        $validated = $request->validate([
+            'event_time' => 'nullable|date',
+            'stop_id' => 'nullable|exists:stops,id',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'gps_accuracy_meters' => 'nullable|numeric|min:0',
+            'area_name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'idempotency_key' => 'nullable|string|max:255',
+        ]);
+
+        $tripPassenger->markAsDropped($this->buildAttendanceAttributes($request, $tripPassenger, $validated, 'check_out'));
+
+        return back()->with('success', 'Passenger checked out successfully.');
+    }
+
+    public function markPassengerNoShow(Request $request, Trip $trip, TripPassenger $tripPassenger)
+    {
+        // Authorize the action
+        $this->authorize('capture-passenger-attendance');
+
+        $this->ensurePassengerBelongsToTrip($trip, $tripPassenger);
+        $this->ensureTripAcceptsAttendance($trip);
+
+        $validated = $request->validate([
+            'event_time' => 'nullable|date',
+            'area_name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'idempotency_key' => 'nullable|string|max:255',
+        ]);
+
+        $tripPassenger->markAsNoShow($this->buildAttendanceAttributes($request, $tripPassenger, $validated, 'no_show'));
+
+        return back()->with('success', 'Passenger marked as no-show.');
+    }
+
+    public function correctPassengerEvent(Request $request, Trip $trip, TripPassenger $tripPassenger, TripPassengerEvent $tripPassengerEvent)
+    {
+        // Authorize the action
+        $this->authorize('correct-passenger-attendance');
+
+        $this->ensurePassengerBelongsToTrip($trip, $tripPassenger);
+        $this->ensureEventBelongsToPassenger($tripPassenger, $tripPassengerEvent);
+
+        $validated = $request->validate([
+            'event_type' => 'required|in:check_in,check_out,no_show,manual_override',
+            'event_time' => 'required|date',
+            'stop_id' => 'nullable|exists:stops,id',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'gps_accuracy_meters' => 'nullable|numeric|min:0',
+            'area_name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $tripPassenger->correctPassengerEvent($tripPassengerEvent, array_merge(
+            $this->buildAttendanceAttributes($request, $tripPassenger, $validated, $validated['event_type']),
+            [
+                'event_type' => $validated['event_type'],
+                'reason' => $validated['reason'],
+                'source' => 'admin_correction',
+            ]
+        ));
+
+        return back()->with('success', 'Passenger event corrected successfully.');
+    }
+
     /**
      * Remove the specified trip
      */
@@ -717,5 +911,48 @@ class TripController extends Controller
         }
 
         return back()->with('success', 'Vehicle reassigned successfully!');
+    }
+
+    protected function buildAttendanceAttributes(Request $request, TripPassenger $tripPassenger, array $validated, string $eventType): array
+    {
+        $defaultStopId = match ($eventType) {
+            'check_in' => $tripPassenger->pickup_stop_id,
+            'check_out' => $tripPassenger->dropoff_stop_id,
+            default => null,
+        };
+
+        return [
+            'event_time' => $validated['event_time'] ?? now(),
+            'stop_id' => $validated['stop_id'] ?? $defaultStopId,
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'gps_accuracy_meters' => $validated['gps_accuracy_meters'] ?? null,
+            'ip_address' => $request->ip(),
+            'area_name' => $validated['area_name'] ?? null,
+            'source' => 'web',
+            'actor_user_id' => $request->user()?->id,
+            'device_id' => $validated['device_id'] ?? null,
+            'idempotency_key' => $validated['idempotency_key'] ?? null,
+            'metadata' => [
+                'user_agent' => $request->userAgent(),
+            ],
+        ];
+    }
+
+    protected function ensurePassengerBelongsToTrip(Trip $trip, TripPassenger $tripPassenger): void
+    {
+        abort_unless((int) $tripPassenger->trip_id === (int) $trip->id, 404);
+    }
+
+    protected function ensureEventBelongsToPassenger(TripPassenger $tripPassenger, TripPassengerEvent $tripPassengerEvent): void
+    {
+        abort_unless((int) $tripPassengerEvent->trip_passenger_id === (int) $tripPassenger->id, 404);
+    }
+
+    protected function ensureTripAcceptsAttendance(Trip $trip): void
+    {
+        if (in_array($trip->status, ['rejected', 'cancelled'], true)) {
+            abort(422, 'Attendance cannot be captured for rejected or cancelled trips.');
+        }
     }
 }

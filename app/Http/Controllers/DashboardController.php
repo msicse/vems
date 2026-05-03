@@ -2,17 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TripPassenger;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Vendor;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        // Find the current user's active attendance action on any in_progress trip
+        $activeAttendanceAction = null;
+        if ($request->user()) {
+            $activePassenger = TripPassenger::with(['trip:id,trip_number,scheduled_date,status', 'pickupStop:id,name', 'dropoffStop:id,name'])
+                ->where('user_id', $request->user()->id)
+                ->whereIn('status', ['pending', 'no_show', 'boarded'])
+                ->whereHas('trip', fn($q) => $q->where('status', 'in_progress'))
+                ->orderByRaw("CASE WHEN status IN ('pending','no_show') THEN 0 ELSE 1 END")
+                ->first();
+
+            if ($activePassenger) {
+                $isCheckIn = in_array($activePassenger->status, ['pending', 'no_show']);
+
+                $activeAttendanceAction = [
+                    'action'            => $isCheckIn ? 'check_in' : 'check_out',
+                    'trip_passenger_id' => $activePassenger->id,
+                    'trip_id'           => $activePassenger->trip_id,
+                    'trip_number'       => $activePassenger->trip?->trip_number,
+                    'scheduled_date'    => $activePassenger->trip?->scheduled_date,
+                    'stop_name'         => $isCheckIn ? $activePassenger->pickupStop?->name : $activePassenger->dropoffStop?->name,
+                ];
+            }
+        }
+
         return Inertia::render('dashboard', [
+            'activeAttendanceAction' => $activeAttendanceAction,
             // Basic stats from existing models
             'stats' => [
                 'total_users' => User::count(),
