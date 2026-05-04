@@ -22,9 +22,9 @@ class UserController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:view-users', only: ['index', 'show', 'export', 'getAvailableDrivers']),
+            new Middleware('permission:view-users', only: ['index', 'show', 'export']),
             new Middleware('permission:create-users', only: ['create', 'store', 'import']),
-            new Middleware('permission:edit-users', only: ['edit', 'update', 'updateDriverStatus']),
+            new Middleware('permission:edit-users', only: ['edit', 'update']),
             new Middleware('permission:delete-users', only: ['destroy']),
         ];
     }
@@ -410,39 +410,6 @@ class UserController extends Controller implements HasMiddleware
 
         return redirect()->route('users.index')
                         ->with('success', 'User deleted successfully.');
-    }
-
-    /**
-     * Get available drivers for AJAX requests.
-     */
-    public function getAvailableDrivers(Request $request)
-    {
-        $drivers = User::availableDrivers()
-            ->with('department:id,name')
-            ->select('id', 'name', 'username', 'employee_id', 'department_id', 'driving_license_no', 'license_class')
-            ->get();
-
-        return response()->json($drivers);
-    }
-
-    /**
-     * Update driver status.
-     */
-    public function updateDriverStatus(Request $request, User $user): RedirectResponse
-    {
-        $request->validate([
-            'driver_status' => 'required|in:available,on_trip,on_leave,inactive,suspended',
-        ]);
-
-        if (!$user->isDriver()) {
-            return redirect()->back()
-                           ->with('error', 'User is not a driver.');
-        }
-
-        $user->update(['driver_status' => $request->driver_status]);
-
-        return redirect()->back()
-                        ->with('success', 'Driver status updated successfully.');
     }
 
     /**

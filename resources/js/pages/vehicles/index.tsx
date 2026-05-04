@@ -49,10 +49,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function VehiclesIndex({ vehicles, filterOptions, stats, queryParams }: VehiclesPageProps) {
-    // Debug logging
-    console.log('VehiclesIndex - queryParams:', queryParams);
-    console.log('VehiclesIndex - vehicles data:', vehicles);
-
     const handleRowClick = (vehicle: Vehicle) => {
         router.visit(route('vehicles.show', vehicle.id));
     };
@@ -61,8 +57,6 @@ export default function VehiclesIndex({ vehicles, filterOptions, stats, queryPar
     const handleSort = (field: string) => {
         const currentDirection = queryParams?.direction || 'asc';
         const newDirection = queryParams?.sort === field && currentDirection === 'asc' ? 'desc' : 'asc';
-
-        console.log('Manual sort clicked:', { field, newDirection });
 
         const params: Record<string, string | number | undefined> = {
             sort: field,

@@ -23,6 +23,7 @@ type ContactPerson = {
 };
 
 type VendorForm = {
+    _method: string;
     name: string;
     address: string;
     phone: string;
@@ -51,7 +52,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function EditVendor({ vendor }: EditVendorProps) {
     const { showError } = useFlashMessage();
 
-    const { data, setData, put, processing, errors } = useForm<VendorForm>({
+    const { data, setData, post, processing, errors } = useForm<VendorForm>({
+        _method: 'PUT',
         name: vendor.name,
         address: vendor.address || '',
         phone: vendor.phone || '',
@@ -102,9 +104,6 @@ export default function EditVendor({ vendor }: EditVendorProps) {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Log the form data to help with debugging
-        console.log('Form data being submitted:', data);
-
         // Only keep contacts with names (valid contacts)
         const validContactPersons = data.contact_persons.filter((c) => c.name.trim() !== '');
         const totalValidContacts = validContactPersons.length;
@@ -114,19 +113,17 @@ export default function EditVendor({ vendor }: EditVendorProps) {
             return;
         }
 
-        // Submit form with FormData option for file uploads
-        // With useForm hook, we only need to call the put method with the route - data is already handled
-        put(route('vendors.update', vendor.id), {
+        // Use method spoofing: POST + _method=PUT in FormData so PHP processes multipart fields.
+        post(route('vendors.update', vendor.id), {
             forceFormData: true,
             onError: (errors) => {
                 // Only show programmatic error if no validation errors (server error)
                 if (Object.keys(errors).length === 0) {
                     showError('Failed to update vendor. Please try again.');
                 }
-                console.error('Validation errors:', errors);
             },
             onSuccess: () => {
-                console.log('Vendor updated successfully');
+                // redirect handled by controller
             },
         });
     };

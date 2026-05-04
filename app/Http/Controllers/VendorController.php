@@ -121,59 +121,29 @@ class VendorController extends Controller implements HasMiddleware
         $data = $request->except(['trade_license_file', 'tin_file', 'bin_file', 'tax_return_file']);
 
         // Handle file uploads
-        if ($request->hasFile('trade_license_file')) {
-            $file = $request->file('trade_license_file');
-            $fileName = 'trade_license_' . time() . '.' . $file->getClientOriginalExtension();
-            // Store in public disk directly (not as a subdirectory called public)
-            $result = $file->storeAs('vendor_documents', $fileName, 'public');
-            \Log::info('Trade license file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
-            $data['trade_license_file'] = $fileName;
-        } else {
-            \Log::info('No trade_license_file uploaded: ' . json_encode($request->all()));
-        }
-
-        if ($request->hasFile('tin_file')) {
-            $file = $request->file('tin_file');
-            $fileName = 'tin_' . time() . '.' . $file->getClientOriginalExtension();
-            $result = $file->storeAs('vendor_documents', $fileName, 'public');
-            \Log::info('TIN file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
-            $data['tin_file'] = $fileName;
-        } else {
-            \Log::info('No tin_file uploaded');
-        }
-
-        if ($request->hasFile('bin_file')) {
-            $file = $request->file('bin_file');
-            $fileName = 'bin_' . time() . '.' . $file->getClientOriginalExtension();
-            $result = $file->storeAs('vendor_documents', $fileName, 'public');
-            \Log::info('BIN file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
-            $data['bin_file'] = $fileName;
-        } else {
-            \Log::info('No bin_file uploaded');
-        }
-
-        if ($request->hasFile('tax_return_file')) {
-            $file = $request->file('tax_return_file');
-            $fileName = 'tax_return_' . time() . '.' . $file->getClientOriginalExtension();
-            $result = $file->storeAs('vendor_documents', $fileName, 'public');
-            \Log::info('Tax return file upload result: ' . ($result ?: 'failed') . ' for file ' . $fileName . ' to public disk');
-            $data['tax_return_file'] = $fileName;
-        } else {
-            \Log::info('No tax_return_file uploaded');
-        }
-
-        $vendor = Vendor::create($data);
-
-        // Create contact persons
-        if (isset($validated['contact_persons'])) {
-            foreach ($validated['contact_persons'] as $contactData) {
-                $vendor->contactPersons()->create($contactData);
+        foreach (['trade_license_file', 'tin_file', 'bin_file', 'tax_return_file'] as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $fileName = $field . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('vendor_documents', $fileName, 'public');
+                $data[$field] = $fileName;
             }
         }
 
-        return redirect()
-            ->route('vendors.index')
-            ->with('success', 'Vendor created successfully!');
+        try {
+            $vendor = Vendor::create($data);
+
+            if (isset($validated['contact_persons'])) {
+                foreach ($validated['contact_persons'] as $contactData) {
+                    $vendor->contactPersons()->create($contactData);
+                }
+            }
+
+            return redirect()->route('vendors.index')
+                ->with('success', 'Vendor created successfully!');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create vendor.');
+        }
     }
 
     /**
@@ -213,7 +183,6 @@ class VendorController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Vendor $vendor)
     {
-        \Log::info('Vendor update request data:', $request->all());
 
         // Get existing contact persons count
         $existingContactsCount = $vendor->contactPersons()->count();
@@ -253,24 +222,16 @@ class VendorController extends Controller implements HasMiddleware
             $data = $request->except(['trade_license_file', 'tin_file', 'bin_file', 'tax_return_file']);
 
             // Handle file uploads
-            \Log::info('Checking for trade_license_file upload');
             if ($request->hasFile('trade_license_file')) {
-                \Log::info('trade_license_file is being uploaded');
                 // Remove old file if it exists
                 if ($vendor->trade_license_file) {
-                    \Log::info('Removing old trade license file: ' . $vendor->trade_license_file);
                     Storage::delete('public/vendor_documents/' . $vendor->trade_license_file);
                 }
 
                 $file = $request->file('trade_license_file');
-                $originalName = $file->getClientOriginalName();
                 $fileName = 'trade_license_' . time() . '.' . $file->getClientOriginalExtension();
-                \Log::info('New trade license file: ' . $fileName . ' (original: ' . $originalName . ')');
-                $result = $file->storeAs('vendor_documents', $fileName, 'public');
-                \Log::info('Trade license file store result: ' . ($result ?: 'failed') . ' to public disk');
+                $file->storeAs('vendor_documents', $fileName, 'public');
                 $data['trade_license_file'] = $fileName;
-            } else {
-                \Log::info('No trade_license_file present in the request');
             }
 
             if ($request->hasFile('tin_file')) {
@@ -307,7 +268,6 @@ class VendorController extends Controller implements HasMiddleware
             }
 
             $vendor->update($data);
-            \Log::info('Vendor updated successfully:', ['vendor_id' => $vendor->id]);
 
             // Update contact persons
         if (isset($validated['contact_persons'])) {
@@ -339,11 +299,7 @@ class VendorController extends Controller implements HasMiddleware
                 ->route('vendors.index')
                 ->with('success', 'Vendor updated successfully!');
         } catch (\Exception $e) {
-            \Log::error('Error updating vendor:', ['error' => $e->getMessage()]);
-
-            return back()
-                ->withErrors(['error' => 'Failed to update vendor: ' . $e->getMessage()])
-                ->withInput();
+            return back()->withInput()->with('error', 'Failed to update vendor.');
         }
     }
 
@@ -352,18 +308,16 @@ class VendorController extends Controller implements HasMiddleware
      */
     public function destroy(Vendor $vendor)
     {
-        // Check if vendor has vehicles
         if ($vendor->vehicles()->count() > 0) {
-            return redirect()
-                ->route('vendors.index')
-                ->with('error', 'Cannot delete vendor with associated vehicles.');
+            return back()->with('error', 'Cannot delete vendor with associated vehicles.');
         }
-
-        $vendor->delete();
-
-        return redirect()
-            ->route('vendors.index')
-            ->with('success', 'Vendor deleted successfully!');
+        try {
+            $vendor->delete();
+            return redirect()->route('vendors.index')
+                ->with('success', 'Vendor deleted successfully!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete vendor.');
+        }
     }
 
     /**

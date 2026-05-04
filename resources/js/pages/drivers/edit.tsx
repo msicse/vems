@@ -71,6 +71,15 @@ interface EditUserProps {
   bloodGroups: Array<{ value: string; label: string }>;
 }
 
+const toDateInputValue = (value: unknown): string => {
+  if (!value) {
+    return '';
+  }
+
+  const raw = String(value);
+  return raw.includes('T') ? raw.split('T')[0] : raw;
+};
+
 // Enhanced user type options with icons and descriptions
 const enhancedUserTypeOptions = [
   {
@@ -122,9 +131,9 @@ export default function EditUser({ user, departments, roles, userRoles, userType
     passport_number: (user.passport_number as string) || '',
     driving_license_no: (user.driving_license_no as string) || '',
     license_class: (user.license_class as string) || '',
-    license_issue_date: (user.license_issue_date as string) || '',
-    license_expiry_date: (user.license_expiry_date as string) || '',
-    joining_date: (user.joining_date as string) || '',
+    license_issue_date: toDateInputValue(user.license_issue_date),
+    license_expiry_date: toDateInputValue(user.license_expiry_date),
+    joining_date: toDateInputValue(user.joining_date),
     status: (user.status as string) || 'active',
     driver_status: (user.driver_status as string) || 'available',
     password: '',

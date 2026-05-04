@@ -320,13 +320,13 @@ class ProductController extends Controller implements HasMiddleware
      */
     public function store(ProductStoreRequest $request)
     {
-        $validated = $request->validated();
-
-        $product = Product::create($validated);
-
-        return redirect()
-            ->route('products.index')
-            ->with('success', 'Product created successfully!');
+        try {
+            Product::create($request->validated());
+            return redirect()->route('products.index')
+                ->with('success', 'Product created successfully!');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create product.');
+        }
     }
 
     /**

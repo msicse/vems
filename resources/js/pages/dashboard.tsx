@@ -1,47 +1,30 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import {
-    Car,
-    Users,
-    MapPin,
-    Calendar,
-    AlertTriangle,
-    Bell,
-    BarChart3,
-    Clock,
-    CheckCircle,
-    TrendingUp,
     Activity,
-    Route,
+    AlertTriangle,
+    Calendar,
+    CheckCircle,
+    Clock,
+    LogIn,
+    LogOut,
     Truck,
     UserCheck,
-    Settings,
-    Package,
+    Users,
     MessageSquare,
-    Shield,
-    LogIn,
-    LogOut
 } from 'lucide-react';
+import { DashboardModuleCards } from '@/components/dashboard-module-cards';
+import { DashboardCharts } from '@/components/dashboard-charts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { type BreadcrumbItem } from '@/types';
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
+    Cell,
     PieChart,
     Pie,
-    Cell,
-    LineChart,
-    Line,
-    AreaChart,
-    Area
+    ResponsiveContainer,
+    Tooltip,
 } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,7 +34,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface DashboardProps {
+interface DashboardProps extends Record<string, unknown> {
     activeAttendanceAction: {
         action: 'check_in' | 'check_out';
         trip_passenger_id: number;
@@ -192,7 +175,6 @@ interface DashboardProps {
 export default function Dashboard() {
     const {
         activeAttendanceAction,
-        stats,
         moduleStats,
         recentActivities,
         upcomingSchedules,
@@ -202,7 +184,7 @@ export default function Dashboard() {
     } = usePage<DashboardProps>().props;
 
     const getIconComponent = (iconName: string) => {
-        const icons: { [key: string]: any } = {
+        const icons: Record<string, React.ComponentType<{ className?: string }>> = {
             'check-circle': CheckCircle,
             'truck': Truck,
             'alert-triangle': AlertTriangle,
@@ -345,437 +327,10 @@ export default function Dashboard() {
                 </div>
 
                 {/* Module Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Vehicle Management */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🚗 Vehicle Management</CardTitle>
-                            <Car className="h-4 w-4 text-blue-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{moduleStats.vehicles.total}</div>
-                            <p className="text-xs text-muted-foreground">Total Vehicles</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Active:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.vehicles.active}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Available:</span>
-                                    <span className="font-medium">{moduleStats.vehicles.available}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Maintenance:</span>
-                                    <span className="font-medium text-orange-600">{moduleStats.vehicles.maintenance}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Driver Management */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">👨‍✈️ Driver Management</CardTitle>
-                            <Users className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{moduleStats.drivers.total}</div>
-                            <p className="text-xs text-muted-foreground">Total Drivers</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Active:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.drivers.active}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>On Trip:</span>
-                                    <span className="font-medium text-blue-600">{moduleStats.drivers.on_trip}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Available:</span>
-                                    <span className="font-medium">{moduleStats.drivers.available}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Route Management */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🗺️ Route Management</CardTitle>
-                            <Route className="h-4 w-4 text-purple-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-purple-600">{moduleStats.routes.total}</div>
-                            <p className="text-xs text-muted-foreground">Total Routes</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Active:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.routes.active}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Today:</span>
-                                    <span className="font-medium text-blue-600">{moduleStats.routes.scheduled_today}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Factories:</span>
-                                    <span className="font-medium">{moduleStats.routes.factories}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Trip & Attendance */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">📍 Trip & Attendance</CardTitle>
-                            <MapPin className="h-4 w-4 text-indigo-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-indigo-600">{moduleStats.trips.today}</div>
-                            <p className="text-xs text-muted-foreground">Trips Today</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Completed:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.trips.completed}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Ongoing:</span>
-                                    <span className="font-medium text-blue-600">{moduleStats.trips.ongoing}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Distance:</span>
-                                    <span className="font-medium">{moduleStats.trips.total_distance} km</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Secondary Module Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Scheduling */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🗓️ Scheduling</CardTitle>
-                            <Calendar className="h-4 w-4 text-teal-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-teal-600">{moduleStats.schedules.this_week}</div>
-                            <p className="text-xs text-muted-foreground">This Week</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Pick & Drop:</span>
-                                    <span className="font-medium">{moduleStats.schedules.pick_drop}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Engineer:</span>
-                                    <span className="font-medium">{moduleStats.schedules.engineer}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Training:</span>
-                                    <span className="font-medium">{moduleStats.schedules.training}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Issues & Complaints */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🛠️ Issues & Complaints</CardTitle>
-                            <AlertTriangle className="h-4 w-4 text-red-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-red-600">{moduleStats.issues.open}</div>
-                            <p className="text-xs text-muted-foreground">Open Issues</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>In Progress:</span>
-                                    <span className="font-medium text-yellow-600">{moduleStats.issues.in_progress}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Resolved Today:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.issues.resolved_today}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>This Month:</span>
-                                    <span className="font-medium">{moduleStats.issues.total_this_month}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Notifications */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🔔 Notifications</CardTitle>
-                            <Bell className="h-4 w-4 text-orange-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">{moduleStats.notifications.pending}</div>
-                            <p className="text-xs text-muted-foreground">Pending</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Sent Today:</span>
-                                    <span className="font-medium text-green-600">{moduleStats.notifications.sent_today}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Reminders:</span>
-                                    <span className="font-medium text-blue-600">{moduleStats.notifications.reminders}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Analytics & Reports */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">📊 Analytics & Reports</CardTitle>
-                            <BarChart3 className="h-4 w-4 text-cyan-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-cyan-600">{performanceMetrics.on_time_percentage}%</div>
-                            <p className="text-xs text-muted-foreground">On-Time Performance</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Satisfaction:</span>
-                                    <span className="font-medium text-green-600">{performanceMetrics.customer_satisfaction}/5</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Utilization:</span>
-                                    <span className="font-medium">{performanceMetrics.vehicle_utilization}%</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Additional Module Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Destination & Factory Management */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🧩 Destination & Factory</CardTitle>
-                            <Package className="h-4 w-4 text-emerald-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-emerald-600">{moduleStats.routes.factories}</div>
-                            <p className="text-xs text-muted-foreground">Active Factories</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Pickup Points:</span>
-                                    <span className="font-medium">{moduleStats.routes.pickup_points}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Routes:</span>
-                                    <span className="font-medium text-blue-600">{moduleStats.routes.total}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Logistics Module */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">📦 Logistics</CardTitle>
-                            <Truck className="h-4 w-4 text-amber-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-amber-600">{moduleStats.trips.total_distance}</div>
-                            <p className="text-xs text-muted-foreground">Total KM Today</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Avg Duration:</span>
-                                    <span className="font-medium">{moduleStats.trips.avg_duration} min</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Efficiency:</span>
-                                    <span className="font-medium text-green-600">{performanceMetrics.fuel_efficiency} km/l</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Roles & Permissions */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">🧑‍💼 Roles & Permissions</CardTitle>
-                            <Shield className="h-4 w-4 text-violet-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-violet-600">4</div>
-                            <p className="text-xs text-muted-foreground">Active Roles</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Admin:</span>
-                                    <span className="font-medium text-red-600">2</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Coordinators:</span>
-                                    <span className="font-medium text-blue-600">8</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>Employees:</span>
-                                    <span className="font-medium">156</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Performance Summary */}
-                    <Card className="hover:shadow-lg transition-shadow duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">📈 Performance Summary</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-pink-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-pink-600">{performanceMetrics.driver_performance}%</div>
-                            <p className="text-xs text-muted-foreground">Driver Performance</p>
-                            <div className="mt-2 space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span>Maintenance:</span>
-                                    <span className="font-medium text-green-600">{performanceMetrics.maintenance_compliance}%</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span>On-Time:</span>
-                                    <span className="font-medium text-blue-600">{performanceMetrics.on_time_percentage}%</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <DashboardModuleCards moduleStats={moduleStats} performanceMetrics={performanceMetrics} />
 
                 {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Weekly Trip Statistics */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <BarChart3 className="w-5 h-5 mr-2" />
-                                Weekly Trip Statistics
-                            </CardTitle>
-                            <CardDescription>Trip completion trends over the week</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={chartData.weeklyTrips}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="day" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="completed" fill="#10b981" name="Completed" />
-                                    <Bar dataKey="cancelled" fill="#ef4444" name="Cancelled" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-
-                    {/* Vehicle Status Distribution */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Car className="w-5 h-5 mr-2" />
-                                Vehicle Status Distribution
-                            </CardTitle>
-                            <CardDescription>Current status of all vehicles</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={chartData.vehicleStatus}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {chartData.vehicleStatus.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Performance Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Monthly Performance Trends */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <TrendingUp className="w-5 h-5 mr-2" />
-                                Monthly Performance Trends
-                            </CardTitle>
-                            <CardDescription>Performance metrics over the last 6 months</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={chartData.monthlyPerformance}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="onTime" stroke="#3b82f6" name="On-Time %" strokeWidth={2} />
-                                    <Line type="monotone" dataKey="utilization" stroke="#10b981" name="Utilization %" strokeWidth={2} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-
-                    {/* Issue Categories */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <AlertTriangle className="w-5 h-5 mr-2" />
-                                Issue Categories (This Month)
-                            </CardTitle>
-                            <CardDescription>Breakdown of issues by category</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={chartData.issueCategories} layout="horizontal">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="category" type="category" width={80} />
-                                    <Tooltip />
-                                    <Bar dataKey="count" fill="#ef4444" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Route Performance Chart */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Route className="w-5 h-5 mr-2" />
-                            Route Performance Analysis
-                        </CardTitle>
-                        <CardDescription>Performance metrics for top 5 routes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <AreaChart data={chartData.routePerformance}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="route" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Area type="monotone" dataKey="onTime" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} name="On-Time %" />
-                                <Area type="monotone" dataKey="rating" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Rating (x20)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+                <DashboardCharts chartData={chartData} />
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

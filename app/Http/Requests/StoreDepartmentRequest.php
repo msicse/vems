@@ -15,6 +15,18 @@ class StoreDepartmentRequest extends FormRequest
     }
 
     /**
+     * Normalize budget_allocation: if submitted as a plain string/number, convert to null
+     * since the backend expects an array keyed by budget category.
+     */
+    protected function prepareForValidation(): void
+    {
+        $budget = $this->input('budget_allocation');
+        if (!is_array($budget)) {
+            $this->merge(['budget_allocation' => null]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array

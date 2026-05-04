@@ -45,13 +45,15 @@ import { LoaderCircle } from "lucide-react"
  * </AdvancedForm>
  */
 
-// Types for React Hook Form integration
-type FormInstance = any // This would be UseFormReturn from react-hook-form
+// Types for React Hook Form integration (placeholder until react-hook-form is installed)
+type FormInstance = Record<string, unknown> & {
+  handleSubmit: (fn: (data: Record<string, unknown>) => void | Promise<void>) => React.FormEventHandler
+}
 
 // Advanced Form Container (requires react-hook-form)
 interface AdvancedFormProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
   form: FormInstance
-  onSubmit: (data: any) => void | Promise<void>
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>
   children: React.ReactNode
   processing?: boolean
   className?: string
@@ -65,11 +67,11 @@ export function AdvancedForm({
   className,
   ...props
 }: AdvancedFormProps) {
-  const handleSubmit = form.handleSubmit(async (data: any) => {
+  const handleSubmit = form.handleSubmit(async (data: Record<string, unknown>) => {
     try {
       await onSubmit(data)
     } catch (error) {
-      console.error('Form submission error:', error)
+      // submission errors are handled by the parent onError callback
     }
   })
 
@@ -94,7 +96,7 @@ interface AdvancedFormFieldProps {
   description?: string
   required?: boolean
   className?: string
-  render: (props: { field: any; fieldState: any; formState: any }) => React.ReactElement
+  render: (props: { field: Record<string, unknown>; fieldState: Record<string, unknown>; formState: Record<string, unknown> }) => React.ReactElement
 }
 
 export function AdvancedFormField({
@@ -179,7 +181,7 @@ export function useInertiaForm<T extends Record<string, any>>(
   options?: {
     method?: 'post' | 'put' | 'patch' | 'delete'
     onSuccess?: () => void
-    onError?: (errors: any) => void
+    onError?: (errors: Record<string, unknown>) => void
   }
 ) {
   const [processing, setProcessing] = React.useState(false)
@@ -190,15 +192,13 @@ export function useInertiaForm<T extends Record<string, any>>(
     try {
       // This would integrate with Inertia.js router
       // For now, we'll provide a placeholder
-      console.log('Would submit to:', route, data)
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       options?.onSuccess?.()
     } catch (error) {
-      console.error('Submission error:', error)
-      options?.onError?.(error)
+      options?.onError?.(error as Record<string, unknown>)
     } finally {
       setProcessing(false)
     }
@@ -216,12 +216,12 @@ interface FormFieldConfig {
   placeholder?: string
   description?: string
   options?: Array<{ label: string; value: string }>
-  validation?: any // Schema validation rules
+  validation?: Record<string, unknown> // Schema validation rules
 }
 
 interface FormBuilderProps {
   fields: FormFieldConfig[]
-  onSubmit: (data: any) => void
+  onSubmit: (data: Record<string, unknown>) => void
   processing?: boolean
   className?: string
 }

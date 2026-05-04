@@ -119,8 +119,8 @@ export default function CreateFactory() {
             onSuccess: () => {
                 // Redirect will be handled by the controller
             },
-            onError: (errors) => {
-                console.log('Server validation errors:', errors);
+            onError: () => {
+                // Inertia binds server errors to form.errors automatically
             },
         });
     };

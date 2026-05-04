@@ -10,6 +10,7 @@ use App\Http\Requests\UserIndexRequest;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
@@ -21,9 +22,9 @@ class DriverController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:view-drivers', only: ['index', 'show']),
+            new Middleware('permission:view-drivers', only: ['index', 'show', 'getAvailableDrivers']),
             new Middleware('permission:create-drivers', only: ['create', 'store']),
-            new Middleware('permission:edit-drivers', only: ['edit', 'update']),
+            new Middleware('permission:edit-drivers', only: ['edit', 'update', 'updateDriverStatus']),
             new Middleware('permission:delete-drivers', only: ['destroy']),
         ];
     }
@@ -292,7 +293,13 @@ class DriverController extends Controller implements HasMiddleware
                 $user->syncRoles([$driverRole->id]);
             }
         } else {
-            $user->syncRoles($validated['roles']);
+            $roleIds = collect($validated['roles'])
+                ->map(static fn ($roleId) => (int) $roleId)
+                ->filter(static fn (int $roleId) => $roleId > 0)
+                ->values();
+
+            $roles = Role::whereIn('id', $roleIds)->get();
+            $user->syncRoles($roles);
         }
 
         return redirect()->route('drivers.index')->with('success', $generatedPassword
@@ -418,7 +425,13 @@ class DriverController extends Controller implements HasMiddleware
 
         // Sync roles - maintain existing roles if not provided
         if (isset($validated['roles']) && !empty($validated['roles'])) {
-            $driver->syncRoles($validated['roles']);
+            $roleIds = collect($validated['roles'])
+                ->map(static fn ($roleId) => (int) $roleId)
+                ->filter(static fn (int $roleId) => $roleId > 0)
+                ->values();
+
+            $roles = Role::whereIn('id', $roleIds)->get();
+            $driver->syncRoles($roles);
         } elseif (!isset($validated['roles']) || empty($validated['roles'])) {
             // If no roles provided, ensure driver has at least the Driver role
             if ($driver->roles->isEmpty()) {
@@ -457,5 +470,38 @@ class DriverController extends Controller implements HasMiddleware
         $driver->delete();
 
         return redirect()->route('drivers.index')->with('success', 'Driver deleted successfully.');
+    }
+
+    /**
+     * Get available drivers for AJAX requests.
+     */
+    public function getAvailableDrivers(Request $request)
+    {
+        $drivers = User::availableDrivers()
+            ->with('department:id,name')
+            ->select('id', 'name', 'username', 'employee_id', 'department_id', 'driving_license_no', 'license_class')
+            ->get();
+
+        return response()->json($drivers);
+    }
+
+    /**
+     * Update driver status.
+     */
+    public function updateDriverStatus(Request $request, User $user): RedirectResponse
+    {
+        $request->validate([
+            'driver_status' => 'required|in:available,on_trip,on_leave,inactive,suspended',
+        ]);
+
+        if (!$user->isDriver()) {
+            return redirect()->back()
+                           ->with('error', 'User is not a driver.');
+        }
+
+        $user->update(['driver_status' => $request->driver_status]);
+
+        return redirect()->back()
+                        ->with('success', 'Driver status updated successfully.');
     }
 }

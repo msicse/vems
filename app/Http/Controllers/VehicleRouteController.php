@@ -177,26 +177,25 @@ class VehicleRouteController extends Controller implements HasMiddleware
             'stops.*.manual_distance' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            // Create the route
-            $route = VehicleRoute::create([
-                'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'remarks' => $validated['remarks'] ?? null,
-            ]);
+        try {
+            DB::transaction(function () use ($validated) {
+                $route = VehicleRoute::create([
+                    'name' => $validated['name'],
+                    'description' => $validated['description'] ?? null,
+                    'remarks' => $validated['remarks'] ?? null,
+                ]);
 
-            // Create route stops with distance calculations if provided
-            if (!empty($validated['stops'])) {
-                $totalDistance = $this->calculateRouteDistances($route->id, $validated['stops']);
+                if (!empty($validated['stops'])) {
+                    $totalDistance = $this->calculateRouteDistances($route->id, $validated['stops']);
+                    $route->update(['total_distance' => $totalDistance]);
+                }
+            });
 
-                // Update route with total distance
-                $route->update(['total_distance' => $totalDistance]);
-            }
-        });
-
-        return redirect()
-            ->route('routes.index')
-            ->with('success', 'Route created successfully!');
+            return redirect()->route('routes.index')
+                ->with('success', 'Route created successfully!');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create route.');
+        }
     }
 
     /**
@@ -241,32 +240,29 @@ class VehicleRouteController extends Controller implements HasMiddleware
             'stops.*.manual_distance' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($validated, $route) {
-            // Update the route
-            $route->update([
-                'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'remarks' => $validated['remarks'] ?? null,
-            ]);
+        try {
+            DB::transaction(function () use ($validated, $route) {
+                $route->update([
+                    'name' => $validated['name'],
+                    'description' => $validated['description'] ?? null,
+                    'remarks' => $validated['remarks'] ?? null,
+                ]);
 
-            // Delete existing route stops
-            $route->routeStops()->delete();
+                $route->routeStops()->delete();
 
-            // Create new route stops with distance calculations if provided
-            if (!empty($validated['stops'])) {
-                $totalDistance = $this->calculateRouteDistances($route->id, $validated['stops']);
+                if (!empty($validated['stops'])) {
+                    $totalDistance = $this->calculateRouteDistances($route->id, $validated['stops']);
+                    $route->update(['total_distance' => $totalDistance]);
+                } else {
+                    $route->update(['total_distance' => 0]);
+                }
+            });
 
-                // Update route with total distance
-                $route->update(['total_distance' => $totalDistance]);
-            } else {
-                // No stops, reset total distance
-                $route->update(['total_distance' => 0]);
-            }
-        });
-
-        return redirect()
-            ->route('routes.index')
-            ->with('success', 'Route updated successfully!');
+            return redirect()->route('routes.index')
+                ->with('success', 'Route updated successfully!');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update route.');
+        }
     }
 
     /**
@@ -274,11 +270,12 @@ class VehicleRouteController extends Controller implements HasMiddleware
      */
     public function destroy(VehicleRoute $route)
     {
-        // The route stops will be deleted automatically due to cascade delete
-        $route->delete();
-
-        return redirect()
-            ->route('routes.index')
-            ->with('success', 'Route deleted successfully!');
+        try {
+            $route->delete();
+            return redirect()->route('routes.index')
+                ->with('success', 'Route deleted successfully!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete route.');
+        }
     }
 }

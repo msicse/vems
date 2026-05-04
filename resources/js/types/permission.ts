@@ -1,0 +1,12 @@
+import type { Role } from './user';
+
+export interface Permission {
+    id: number;
+    name: string;
+    guard_name: string;
+    created_at: string;
+    updated_at: string;
+    roles?: Role[];
+    users_count?: number;
+    roles_count?: number;
+}

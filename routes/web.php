@@ -15,6 +15,8 @@ use App\Http\Controllers\DebugController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\TripController;
+use App\Http\Controllers\TripPassengerController;
+use App\Http\Controllers\TripStateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FactoryController;
 use App\Http\Controllers\LogisticsController;
@@ -44,8 +46,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Debug route for checking authentication
-    Route::get('/debug/auth', [DebugController::class, 'authCheck'])->name('debug.auth');
+    // Debug route — restricted to Super Admin only
+    Route::middleware('role:Super Admin')->group(function () {
+        Route::get('/debug/auth', [DebugController::class, 'authCheck'])->name('debug.auth');
+    });
 
     Route::resource('products', ProductController::class);
     Route::get('products-export', [ProductController::class, 'export'])->name('products.export');
@@ -59,8 +63,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('vendors-select', [VendorController::class, 'getVendorsForSelect'])->name('vendors.select');
 
     Route::resource('users', UserController::class);
-    Route::get('/api/users/available-drivers', [UserController::class, 'getAvailableDrivers'])->name('users.available-drivers');
-    Route::patch('/users/{user}/driver-status', [UserController::class, 'updateDriverStatus'])->name('users.update-driver-status');
+    Route::get('/api/drivers/available', [DriverController::class, 'getAvailableDrivers'])->name('drivers.available');
+    Route::patch('/drivers/{user}/status', [DriverController::class, 'updateDriverStatus'])->name('drivers.update-status');
     Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
     Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
 
@@ -94,16 +98,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/trips/recurring', [TripController::class, 'storeRecurring'])->name('trips.store-recurring');
     Route::get('/trips/passenger-events', [TripController::class, 'passengerEvents'])->name('trips.passenger-events');
     Route::resource('trips', TripController::class);
-    Route::post('/trips/{trip}/approve', [TripController::class, 'approve'])->name('trips.approve');
-    Route::post('/trips/{trip}/reject', [TripController::class, 'reject'])->name('trips.reject');
-    Route::post('/trips/{trip}/start', [TripController::class, 'start'])->name('trips.start');
-    Route::post('/trips/{trip}/complete', [TripController::class, 'complete'])->name('trips.complete');
-    Route::post('/trips/{trip}/cancel', [TripController::class, 'cancel'])->name('trips.cancel');
+
+    // Trip state routes
+    Route::post('/trips/{trip}/approve', [TripStateController::class, 'approve'])->name('trips.approve');
+    Route::post('/trips/{trip}/reject', [TripStateController::class, 'reject'])->name('trips.reject');
+    Route::post('/trips/{trip}/start', [TripStateController::class, 'start'])->name('trips.start');
+    Route::post('/trips/{trip}/complete', [TripStateController::class, 'complete'])->name('trips.complete');
+    Route::post('/trips/{trip}/cancel', [TripStateController::class, 'cancel'])->name('trips.cancel');
     Route::post('/trips/{trip}/reassign-vehicle', [TripController::class, 'reassignVehicle'])->name('trips.reassign-vehicle');
-    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-in', [TripController::class, 'checkInPassenger'])->name('trips.passengers.check-in');
-    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-out', [TripController::class, 'checkOutPassenger'])->name('trips.passengers.check-out');
-    Route::post('/trips/{trip}/passengers/{tripPassenger}/no-show', [TripController::class, 'markPassengerNoShow'])->name('trips.passengers.no-show');
-    Route::post('/trips/{trip}/passengers/{tripPassenger}/events/{tripPassengerEvent}/correct', [TripController::class, 'correctPassengerEvent'])->name('trips.passengers.events.correct');
+
+    // Trip passenger routes
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-in', [TripPassengerController::class, 'checkIn'])->name('trips.passengers.check-in');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/check-out', [TripPassengerController::class, 'checkOut'])->name('trips.passengers.check-out');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/no-show', [TripPassengerController::class, 'markNoShow'])->name('trips.passengers.no-show');
+    Route::post('/trips/{trip}/passengers/{tripPassenger}/events/{tripPassengerEvent}/correct', [TripPassengerController::class, 'correctEvent'])->name('trips.passengers.events.correct');
 
     // Role and Permission management routes
     Route::resource('roles', RoleController::class);

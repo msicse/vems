@@ -69,8 +69,8 @@ export default function ShowUserGroup({ group }: ShowUserGroupProps) {
         params: { search },
       });
       setAvailableUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch {
+      // available-users fetch failure is non-critical
     } finally {
       setLoading(false);
     }

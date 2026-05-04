@@ -66,7 +66,9 @@ class Department extends Model
             return 0;
         }
 
-        return array_sum($this->budget_allocation);
+        $allocation = $this->budget_allocation;
+
+        return is_array($allocation) ? array_sum($allocation) : 0;
     }
 
     /**

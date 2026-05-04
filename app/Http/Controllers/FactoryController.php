@@ -106,12 +106,13 @@ class FactoryController extends Controller implements HasMiddleware
      */
     public function store(FactoryStoreRequest $request)
     {
-        $validated = $request->validated();
-
-        Factory::create($validated);
-
-        return redirect()->route('factories.index')
-            ->with('success', 'Factory created successfully.');
+        try {
+            Factory::create($request->validated());
+            return redirect()->route('factories.index')
+                ->with('success', 'Factory created successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create factory.');
+        }
     }
 
     /**
@@ -139,12 +140,13 @@ class FactoryController extends Controller implements HasMiddleware
      */
     public function update(FactoryUpdateRequest $request, Factory $factory)
     {
-        $validated = $request->validated();
-
-        $factory->update($validated);
-
-        return redirect()->route('factories.index')
-            ->with('success', 'Factory updated successfully.');
+        try {
+            $factory->update($request->validated());
+            return redirect()->route('factories.index')
+                ->with('success', 'Factory updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update factory.');
+        }
     }
 
     /**
@@ -152,9 +154,12 @@ class FactoryController extends Controller implements HasMiddleware
      */
     public function destroy(Factory $factory)
     {
-        $factory->delete();
-
-        return redirect()->route('factories.index')
-            ->with('success', 'Factory deleted successfully.');
+        try {
+            $factory->delete();
+            return redirect()->route('factories.index')
+                ->with('success', 'Factory deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete factory.');
+        }
     }
 }

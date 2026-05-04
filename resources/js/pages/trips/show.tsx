@@ -1,38 +1,35 @@
 import InputError from '@/components/input-error';
+import { AttendanceHistoryCard } from '@/components/trip-attendance-history';
+import { TripActionButtons } from '@/components/trip-action-buttons';
+import { AttendanceTripPassenger, PassengerAttendanceCard } from '@/components/trip-passenger-attendance-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, Trip, TripPassenger, TripPassengerEvent } from '@/types';
+import { BreadcrumbItem, Trip, TripPassengerEvent } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     Building2,
     Calendar,
     Car,
     CheckCircle,
     ClipboardList,
     Clock,
-    Edit,
     FileText,
-    Filter,
     Flag,
-    History,
     MapPin,
     MessageSquare,
     Play,
-    RefreshCw,
     User,
     Users,
     XCircle,
 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -41,10 +38,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 type AttendanceMode = 'check_in' | 'check_out' | 'no_show' | 'correct';
-
-type AttendanceTripPassenger = TripPassenger & {
-    passenger_events?: TripPassengerEvent[];
-};
 
 type AttendanceFormShape = {
     event_type: 'check_in' | 'check_out' | 'no_show' | 'manual_override';
@@ -241,67 +234,6 @@ export default function ShowTrip({ trip }: { trip: Trip }) {
         )
         .sort((left, right) => new Date(right.event.event_time).getTime() - new Date(left.event.event_time).getTime());
 
-    // Collect unique sources and passenger names for filter dropdowns
-    const uniqueSources = useMemo(
-        () => [...new Set(allAttendanceEvents.map((e) => e.event.source).filter(Boolean))] as string[],
-        [allAttendanceEvents],
-    );
-
-    // Filter state
-    const [filterEventTypes, setFilterEventTypes] = useState<string[]>([]);
-    const [filterValidity, setFilterValidity] = useState<'all' | 'valid' | 'voided'>('all');
-    const [filterSources, setFilterSources] = useState<string[]>([]);
-    const [filterPassengerId, setFilterPassengerId] = useState<string>('');
-    const [filterDateFrom, setFilterDateFrom] = useState<string>('');
-    const [filterDateTo, setFilterDateTo] = useState<string>('');
-    const [filterAreaSearch, setFilterAreaSearch] = useState<string>('');
-    const [filtersOpen, setFiltersOpen] = useState(false);
-
-    const hasActiveFilters =
-        filterEventTypes.length > 0 ||
-        filterValidity !== 'all' ||
-        filterSources.length > 0 ||
-        filterPassengerId !== '' ||
-        filterDateFrom !== '' ||
-        filterDateTo !== '' ||
-        filterAreaSearch !== '';
-
-    const attendanceEvents = useMemo(() => {
-        return allAttendanceEvents.filter(({ passenger, event }) => {
-            if (filterEventTypes.length > 0 && !filterEventTypes.includes(event.event_type)) return false;
-            if (filterValidity === 'valid' && !event.is_valid) return false;
-            if (filterValidity === 'voided' && event.is_valid) return false;
-            if (filterSources.length > 0 && !filterSources.includes(event.source ?? '')) return false;
-            if (filterPassengerId && String(passenger.user?.id ?? passenger.user_id) !== filterPassengerId) return false;
-            if (filterAreaSearch && !event.area_name?.toLowerCase().includes(filterAreaSearch.toLowerCase())) return false;
-            if (filterDateFrom) {
-                const eventDate = new Date(event.event_time);
-                const fromDate = new Date(filterDateFrom);
-                if (eventDate < fromDate) return false;
-            }
-            if (filterDateTo) {
-                const eventDate = new Date(event.event_time);
-                const toDate = new Date(filterDateTo + 'T23:59:59');
-                if (eventDate > toDate) return false;
-            }
-            return true;
-        });
-    }, [allAttendanceEvents, filterEventTypes, filterValidity, filterSources, filterPassengerId, filterDateFrom, filterDateTo, filterAreaSearch]);
-
-    const resetFilters = () => {
-        setFilterEventTypes([]);
-        setFilterValidity('all');
-        setFilterSources([]);
-        setFilterPassengerId('');
-        setFilterDateFrom('');
-        setFilterDateTo('');
-        setFilterAreaSearch('');
-    };
-
-    const toggleCheckbox = (list: string[], setList: (v: string[]) => void, value: string) => {
-        setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
-    };
-
     const openAttendanceDialog = (mode: AttendanceMode, passenger: AttendanceTripPassenger, event?: TripPassengerEvent) => {
         setDialogState({ mode, passenger, event });
         setData(buildFormDefaults(mode, passenger, event));
@@ -373,24 +305,7 @@ export default function ShowTrip({ trip }: { trip: Trip }) {
                         </div>
                         {trip.team_number && <p className="text-sm text-gray-600">Team: {trip.team_number}</p>}
                     </div>
-                    <div className="flex items-center gap-2">
-                        {['pending', 'approved'].includes(trip.status) && (
-                            <Button variant="default" onClick={() => router.visit(route('trips.edit', trip.id))}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Trip
-                            </Button>
-                        )}
-                        {['approved', 'assigned'].includes(trip.status) && (
-                            <Button className="bg-green-600 hover:bg-green-700" onClick={openStartTripDialog}>
-                                <Play className="mr-2 h-4 w-4" />
-                                Start Trip
-                            </Button>
-                        )}
-                        <Button variant="outline" onClick={() => router.visit(route('trips.index'))}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back
-                        </Button>
-                    </div>
+                    <TripActionButtons trip={trip} onOpenStartTrip={openStartTripDialog} />
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -581,308 +496,23 @@ export default function ShowTrip({ trip }: { trip: Trip }) {
                         </Card>
 
                         {passengers.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Users className="h-5 w-5" />
-                                        Passenger Attendance
-                                    </CardTitle>
-                                    <CardDescription>Capture real pickup and drop events, then correct mistakes without losing history.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {passengers.map((passenger, index) => {
-                                            const orderedEvents = [...(passenger.passenger_events ?? [])].sort(
-                                                (left, right) => new Date(right.event_time).getTime() - new Date(left.event_time).getTime(),
-                                            );
-                                            const latestEvent = orderedEvents[0];
-
-                                            return (
-                                                <div key={passenger.id} className="rounded-xl border p-4">
-                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                                                                {index + 1}
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <p className="text-sm font-semibold">{passenger.user?.name ?? 'Unnamed passenger'}</p>
-                                                                    {getPassengerStatusBadge(passenger.status)}
-                                                                    <Badge variant="secondary">{orderedEvents.length} events</Badge>
-                                                                </div>
-                                                                {passenger.user?.employee_id && (
-                                                                    <p className="text-xs text-gray-500">Employee ID: {passenger.user.employee_id}</p>
-                                                                )}
-                                                                <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 md:grid-cols-2">
-                                                                    <p>
-                                                                        Planned pickup: <span className="font-medium text-gray-900">{passenger.pickup_stop?.name ?? 'Not set'}</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        Planned dropoff: <span className="font-medium text-gray-900">{passenger.dropoff_stop?.name ?? 'Not set'}</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        Actual check-in: <span className="font-medium text-gray-900">{formatDateTime(passenger.boarded_at)}</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        Actual check-out: <span className="font-medium text-gray-900">{formatDateTime(passenger.dropped_at)}</span>
-                                                                    </p>
-                                                                </div>
-                                                                {latestEvent && (
-                                                                    <p className="text-xs text-gray-500">
-                                                                        Latest event: {latestEvent.event_type.replace('_', ' ')} at {formatDateTime(latestEvent.event_time)}
-                                                                        {latestEvent.area_name ? ` from ${latestEvent.area_name}` : ''}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        {canManageAttendance && canCaptureAttendance && (
-                                                            <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">
-                                                                <Button size="sm" onClick={() => openAttendanceDialog('check_in', passenger)}>
-                                                                    Check In
-                                                                </Button>
-                                                                <Button size="sm" variant="outline" onClick={() => openAttendanceDialog('check_out', passenger)}>
-                                                                    Check Out
-                                                                </Button>
-                                                                <Button size="sm" variant="outline" onClick={() => openAttendanceDialog('no_show', passenger)}>
-                                                                    No Show
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <PassengerAttendanceCard
+                                passengers={passengers}
+                                canManageAttendance={canManageAttendance}
+                                canCaptureAttendance={canCaptureAttendance}
+                                onOpenDialog={openAttendanceDialog}
+                                getPassengerStatusBadge={getPassengerStatusBadge}
+                                formatDateTime={formatDateTime}
+                            />
                         )}
 
-                        {allAttendanceEvents.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                        <div>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <History className="h-5 w-5" />
-                                                Attendance Event History
-                                                <Badge variant="outline" className="ml-1 font-normal">
-                                                    {attendanceEvents.length}{hasActiveFilters ? ` / ${allAttendanceEvents.length}` : ''}
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">Append-only history with voided records retained for audit and correction.</CardDescription>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {hasActiveFilters && (
-                                                <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 gap-1 text-xs">
-                                                    <RefreshCw className="h-3 w-3" />
-                                                    Clear
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant={filtersOpen ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() => setFiltersOpen((v) => !v)}
-                                                className="h-8 gap-1.5"
-                                            >
-                                                <Filter className="h-3.5 w-3.5" />
-                                                Filters
-                                                {hasActiveFilters && (
-                                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-foreground text-[10px] font-bold text-primary">
-                                                        {filterEventTypes.length + filterSources.length + (filterValidity !== 'all' ? 1 : 0) + (filterPassengerId ? 1 : 0) + (filterDateFrom ? 1 : 0) + (filterDateTo ? 1 : 0) + (filterAreaSearch ? 1 : 0)}
-                                                    </span>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-0 p-0">
-                                    <div className="flex min-h-0 flex-col lg:flex-row">
-                                        {/* Filter Sidebar */}
-                                        {filtersOpen && (
-                                            <aside className="w-full shrink-0 space-y-5 border-b p-5 lg:w-64 lg:border-b-0 lg:border-r">
-                                                {/* Event Type */}
-                                                <div>
-                                                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Event Type</p>
-                                                    <div className="space-y-2">
-                                                        {(['check_in', 'check_out', 'no_show', 'manual_override', 'correction'] as const).map((type) => (
-                                                            <label key={type} className="flex cursor-pointer items-center gap-2">
-                                                                <Checkbox
-                                                                    checked={filterEventTypes.includes(type)}
-                                                                    onCheckedChange={() => toggleCheckbox(filterEventTypes, setFilterEventTypes, type)}
-                                                                />
-                                                                <span className="text-sm capitalize">{type.replace('_', ' ')}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <Separator />
-
-                                                {/* Validity */}
-                                                <div>
-                                                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validity</p>
-                                                    <div className="space-y-2">
-                                                        {(['all', 'valid', 'voided'] as const).map((opt) => (
-                                                            <label key={opt} className="flex cursor-pointer items-center gap-2">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="event-validity"
-                                                                    value={opt}
-                                                                    checked={filterValidity === opt}
-                                                                    onChange={() => setFilterValidity(opt)}
-                                                                    className="h-3.5 w-3.5 accent-primary"
-                                                                />
-                                                                <span className="text-sm capitalize">{opt}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {uniqueSources.length > 0 && (
-                                                    <>
-                                                        <Separator />
-                                                        {/* Source */}
-                                                        <div>
-                                                            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Source</p>
-                                                            <div className="space-y-2">
-                                                                {uniqueSources.map((src) => (
-                                                                    <label key={src} className="flex cursor-pointer items-center gap-2">
-                                                                        <Checkbox
-                                                                            checked={filterSources.includes(src)}
-                                                                            onCheckedChange={() => toggleCheckbox(filterSources, setFilterSources, src)}
-                                                                        />
-                                                                        <span className="text-sm capitalize">{src.replace('_', ' ')}</span>
-                                                                    </label>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                <Separator />
-
-                                                {/* Passenger */}
-                                                <div>
-                                                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Passenger</p>
-                                                    <select
-                                                        value={filterPassengerId}
-                                                        onChange={(e) => setFilterPassengerId(e.target.value)}
-                                                        className="w-full rounded-md border bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                                                    >
-                                                        <option value="">All passengers</option>
-                                                        {passengers.map((p) => (
-                                                            <option key={p.id} value={String(p.user?.id ?? p.user_id)}>
-                                                                {p.user?.name ?? `Passenger ${p.id}`}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <Separator />
-
-                                                {/* Date Range */}
-                                                <div>
-                                                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date Range</p>
-                                                    <div className="space-y-2">
-                                                        <div>
-                                                            <Label className="mb-1 text-xs text-muted-foreground">From</Label>
-                                                            <Input
-                                                                type="date"
-                                                                value={filterDateFrom}
-                                                                onChange={(e) => setFilterDateFrom(e.target.value)}
-                                                                className="h-8 text-sm"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="mb-1 text-xs text-muted-foreground">To</Label>
-                                                            <Input
-                                                                type="date"
-                                                                value={filterDateTo}
-                                                                onChange={(e) => setFilterDateTo(e.target.value)}
-                                                                className="h-8 text-sm"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <Separator />
-
-                                                {/* Area Search */}
-                                                <div>
-                                                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Area</p>
-                                                    <Input
-                                                        type="text"
-                                                        placeholder="Search area name…"
-                                                        value={filterAreaSearch}
-                                                        onChange={(e) => setFilterAreaSearch(e.target.value)}
-                                                        className="h-8 text-sm"
-                                                    />
-                                                </div>
-
-                                                {hasActiveFilters && (
-                                                    <>
-                                                        <Separator />
-                                                        <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={resetFilters}>
-                                                            <RefreshCw className="h-3.5 w-3.5" />
-                                                            Reset all filters
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </aside>
-                                        )}
-
-                                        {/* Event List */}
-                                        <div className="flex-1 space-y-3 p-5">
-                                            {attendanceEvents.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center py-12 text-center">
-                                                    <Filter className="mb-3 h-8 w-8 text-muted-foreground/40" />
-                                                    <p className="text-sm font-medium text-muted-foreground">No events match the current filters</p>
-                                                    <Button variant="link" size="sm" className="mt-1" onClick={resetFilters}>
-                                                        Clear filters
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                attendanceEvents.map(({ passenger, event }) => (
-                                                    <div key={event.id} className="rounded-xl border p-4">
-                                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                                            <div className="space-y-2">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    {getEventBadge(event)}
-                                                                    {!event.is_valid && <Badge variant="destructive">Voided</Badge>}
-                                                                    <span className="text-sm font-medium">{passenger.user?.name ?? 'Unknown passenger'}</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 md:grid-cols-2 xl:grid-cols-3">
-                                                                    <p>Time: <span className="font-medium text-gray-900">{formatDateTime(event.event_time)}</span></p>
-                                                                    <p>Area: <span className="font-medium text-gray-900">{event.area_name ?? 'Not captured'}</span></p>
-                                                                    <p>IP: <span className="font-medium text-gray-900">{event.ip_address ?? 'Not captured'}</span></p>
-                                                                    <p>Source: <span className="font-medium text-gray-900">{event.source ?? 'Unknown'}</span></p>
-                                                                    <p>Stop: <span className="font-medium text-gray-900">{event.stop?.name ?? 'Not linked'}</span></p>
-                                                                    <p>Actor: <span className="font-medium text-gray-900">{event.actor?.name ?? 'System'}</span></p>
-                                                                </div>
-                                                                {(event.latitude || event.longitude || event.gps_accuracy_meters) && (
-                                                                    <p className="text-xs text-gray-500">
-                                                                        GPS: {event.latitude ?? '-'}, {event.longitude ?? '-'}
-                                                                        {event.gps_accuracy_meters ? ` (accuracy ${event.gps_accuracy_meters}m)` : ''}
-                                                                    </p>
-                                                                )}
-                                                                {!event.is_valid && event.void_reason && (
-                                                                    <p className="text-xs text-rose-700">Voided reason: {event.void_reason}</p>
-                                                                )}
-                                                            </div>
-                                                            {canManageAttendance && event.is_valid && canCorrectAttendance && (
-                                                                <Button variant="outline" size="sm" onClick={() => openAttendanceDialog('correct', passenger, event)}>
-                                                                    Correct Event
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                        <AttendanceHistoryCard
+                            allAttendanceEvents={allAttendanceEvents}
+                            passengers={passengers}
+                            canManageAttendance={canManageAttendance}
+                            canCorrectAttendance={canCorrectAttendance}
+                            onCorrectEvent={(passenger, event) => openAttendanceDialog('correct', passenger, event)}
+                        />
 
                         {trip.factories && trip.factories.length > 0 && (
                             <Card>

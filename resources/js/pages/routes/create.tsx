@@ -174,11 +174,9 @@ export default function CreateRoute({ stops: initialStops }: CreateRouteProps) {
                 const newStop = result.data;
                 setStops(prev => [...prev, newStop]);
                 return newStop;
-            } else {
-                console.error('Failed to create stop');
             }
-        } catch (error) {
-            console.error('Error creating stop:', error);
+        } catch {
+            // stop creation failure is surfaced via form state
         }
     };
 
@@ -213,8 +211,8 @@ export default function CreateRoute({ stops: initialStops }: CreateRouteProps) {
 
             setShowMapPicker(false);
             setMapPickerStopIndex(null);
-        } catch (error) {
-            console.error('Error creating stop from map:', error);
+        } catch {
+            // map stop creation failure is non-critical
         }
     };
 

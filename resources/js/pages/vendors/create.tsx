@@ -75,34 +75,22 @@ export default function CreateVendor() {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Debug file attachments
-        console.log('Submitting form with files:', {
-            trade_license_file: data.trade_license_file,
-            tin_file: data.tin_file,
-            bin_file: data.bin_file,
-            tax_return_file: data.tax_return_file
-        });
-
         post(route('vendors.store'), {
             forceFormData: true,
             preserveScroll: false,
             preserveState: false,
-            onError: (errors) => {
-                console.error('Form submission errors:', errors);
+            onError: () => {
+                // Inertia binds server errors to form.errors automatically
             },
             onSuccess: () => {
-                console.log('Vendor created successfully with files');
+                // redirect handled by controller
             }
         });
     };
 
     const handleFileChange = (field: 'trade_license_file' | 'tin_file' | 'bin_file' | 'tax_return_file', e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            console.log(`Setting ${field} with file:`, file);
-            setData(field, file);
-        } else {
-            console.log(`No file selected for ${field}`);
+            setData(field, e.target.files[0]);
         }
     };
 

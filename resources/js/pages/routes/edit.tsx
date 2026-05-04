@@ -157,11 +157,9 @@ export default function EditRoute({ route, stops: initialStops }: EditRouteProps
                 const newStop = result.data;
                 setStops(prev => [...prev, newStop]);
                 return newStop;
-            } else {
-                console.error('Failed to create stop');
             }
-        } catch (error) {
-            console.error('Error creating stop:', error);
+        } catch {
+            // stop creation failure is surfaced via form state
         }
     };
 

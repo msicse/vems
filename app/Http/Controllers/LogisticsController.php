@@ -118,10 +118,13 @@ class LogisticsController extends Controller implements HasMiddleware
         $validated['status'] = $validated['status'] === 'active';
         $validated['created_by'] = auth()->id();
 
-        Logistics::create($validated);
-
-        return redirect()->route('logistics.index')
-            ->with('success', 'Logistics created successfully.');
+        try {
+            Logistics::create($validated);
+            return redirect()->route('logistics.index')
+                ->with('success', 'Logistics created successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create logistics.');
+        }
     }
 
     /**
@@ -187,10 +190,13 @@ class LogisticsController extends Controller implements HasMiddleware
 
         $validated['status'] = $validated['status'] === 'active';
 
-        $logistic->update($validated);
-
-        return redirect()->route('logistics.index')
-            ->with('success', 'Logistics updated successfully.');
+        try {
+            $logistic->update($validated);
+            return redirect()->route('logistics.index')
+                ->with('success', 'Logistics updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update logistics.');
+        }
     }
 
     /**
@@ -198,15 +204,13 @@ class LogisticsController extends Controller implements HasMiddleware
      */
     public function destroy(Logistics $logistic): RedirectResponse
     {
-        if ($logistic->status) {
-            return redirect()->back()
-                ->with('error', 'Cannot delete a locked logistics.');
+        try {
+            $logistic->delete();
+            return redirect()->route('logistics.index')
+                ->with('success', 'Logistics deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete logistics.');
         }
-
-        $logistic->delete();
-
-        return redirect()->route('logistics.index')
-            ->with('success', 'Logistics deleted successfully.');
     }
 
     /**

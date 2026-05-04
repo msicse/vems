@@ -182,7 +182,6 @@ export default function LogisticsIndex({ logistics, departments, filters, stats 
             size="sm"
             className="h-7 w-7 p-0"
             onClick={() => handleDelete(logistic.id)}
-            disabled={logistic.status === 'active'}
           >
             <Trash2 className="h-3.5 w-3.5 text-destructive" />
           </Button>

@@ -125,6 +125,7 @@ export function ServerSideDataTable<T>({
   }
 
   const renderCellContent = (column: DataTableColumn<T>, row: T) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const value = (row as any)[column.key]
 
     if (column.render) {

@@ -116,15 +116,16 @@ class UserGroupController extends Controller implements HasMiddleware
         $userIds = $validated['user_ids'] ?? [];
         unset($validated['user_ids']);
 
-        $group = UserGroup::create($validated);
-
-        // Add members if provided
-        if (!empty($userIds)) {
-            $group->syncMembers($userIds);
+        try {
+            $group = UserGroup::create($validated);
+            if (!empty($userIds)) {
+                $group->syncMembers($userIds);
+            }
+            return redirect()->route('user-groups.index')
+                ->with('success', 'User group created successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create user group.');
         }
-
-        return redirect()->route('user-groups.index')
-            ->with('success', 'User group created successfully.');
     }
 
     /**
@@ -211,15 +212,16 @@ class UserGroupController extends Controller implements HasMiddleware
         $userIds = $validated['user_ids'] ?? [];
         unset($validated['user_ids']);
 
-        $userGroup->update($validated);
-
-        // Sync members if provided
-        if (isset($userIds)) {
-            $userGroup->syncMembers($userIds);
+        try {
+            $userGroup->update($validated);
+            if (isset($userIds)) {
+                $userGroup->syncMembers($userIds);
+            }
+            return redirect()->route('user-groups.index')
+                ->with('success', 'User group updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update user group.');
         }
-
-        return redirect()->route('user-groups.index')
-            ->with('success', 'User group updated successfully.');
     }
 
     /**
@@ -227,10 +229,13 @@ class UserGroupController extends Controller implements HasMiddleware
      */
     public function destroy(UserGroup $userGroup): RedirectResponse
     {
-        $userGroup->delete();
-
-        return redirect()->route('user-groups.index')
-            ->with('success', 'User group deleted successfully.');
+        try {
+            $userGroup->delete();
+            return redirect()->route('user-groups.index')
+                ->with('success', 'User group deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete user group.');
+        }
     }
 
     /**

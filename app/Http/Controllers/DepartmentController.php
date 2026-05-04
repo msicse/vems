@@ -123,12 +123,14 @@ class DepartmentController extends Controller implements HasMiddleware
      */
     public function store(StoreDepartmentRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $department = Department::create($validated);
-
-        return redirect()->route('departments.index')
-                        ->with('success', 'Department created successfully.');
+        try {
+            $validated = $request->validated();
+            Department::create($validated);
+            return redirect()->route('departments.index')
+                ->with('success', 'Department created successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create department.');
+        }
     }
 
     /**
@@ -200,12 +202,13 @@ class DepartmentController extends Controller implements HasMiddleware
      */
     public function update(UpdateDepartmentRequest $request, Department $department): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $department->update($validated);
-
-        return redirect()->route('departments.index')
-                        ->with('success', 'Department updated successfully.');
+        try {
+            $department->update($request->validated());
+            return redirect()->route('departments.index')
+                ->with('success', 'Department updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to update department.');
+        }
     }
 
     /**
@@ -213,16 +216,16 @@ class DepartmentController extends Controller implements HasMiddleware
      */
     public function destroy(Department $department): RedirectResponse
     {
-        // Check if department has users
         if ($department->users()->count() > 0) {
-            return redirect()->back()
-                           ->with('error', 'Cannot delete department with active users. Please reassign users first.');
+            return back()->with('error', 'Cannot delete department with active users. Please reassign users first.');
         }
-
-        $department->delete();
-
-        return redirect()->route('departments.index')
-                        ->with('success', 'Department deleted successfully.');
+        try {
+            $department->delete();
+            return redirect()->route('departments.index')
+                ->with('success', 'Department deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete department.');
+        }
     }
 
     /**

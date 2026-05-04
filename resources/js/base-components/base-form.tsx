@@ -714,14 +714,9 @@ export function FormDatePicker({
           max={max}
           aria-invalid={!!error}
           aria-describedby={description ? `${name}-description` : undefined}
-          className={cn(
-            "pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer", // Hide native calendar icon but keep functionality
-            error && "border-destructive focus-visible:ring-destructive"
-          )}
+
         />
-        <Calendar
-          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none"
-        />
+
       </div>
 
       {description && (
