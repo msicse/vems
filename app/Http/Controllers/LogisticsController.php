@@ -6,22 +6,37 @@ use App\Models\Department;
 use App\Models\Logistics;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class LogisticsController extends Controller
+class LogisticsController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-logistics', only: ['index', 'show']),
+            new Middleware('permission:create-logistics', only: ['create', 'store']),
+            new Middleware('permission:edit-logistics', only: ['edit', 'update', 'toggleLock']),
+            new Middleware('permission:delete-logistics', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of logistics.
      */
     public function index(Request $request): Response
     {
-        $query = Logistics::with(['department', 'creator']);
+        $query = Logistics::with(['department:id,name', 'creator:id,name']);
 
         // Search
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%')
-                ->orWhere('description', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
+            });
         }
 
         // Department filter
@@ -56,14 +71,20 @@ class LogisticsController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $logisticsStats = Logistics::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active, ' .
+            'SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as inactive'
+        )->first();
+
         return Inertia::render('logistics/index', [
             'logistics' => $logistics,
             'departments' => $departments,
             'filters' => $request->only(['search', 'department_id', 'status']),
             'stats' => [
-                'total' => Logistics::count(),
-                'active' => Logistics::active()->count(),
-                'inactive' => Logistics::inactive()->count(),
+                'total' => (int) ($logisticsStats->total ?? 0),
+                'active' => (int) ($logisticsStats->active ?? 0),
+                'inactive' => (int) ($logisticsStats->inactive ?? 0),
             ],
         ]);
     }

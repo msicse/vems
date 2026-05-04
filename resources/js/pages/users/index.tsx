@@ -1,11 +1,13 @@
 import { ServerSideDataTable } from '@/base-components/base-data-table';
 import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, ColumnFilter, DataTableColumn } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Edit, Eye, Plus, Trash2, Shield, User, Mail } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface User {
     id: number;
@@ -74,7 +76,7 @@ export default function UsersIndex({
     };
 
     // Define table columns
-    const columns: DataTableColumn<User>[] = [
+    const columns: DataTableColumn<User>[] = useMemo(() => [
         {
             key: 'id',
             label: 'ID',
@@ -204,12 +206,7 @@ export default function UsersIndex({
             key: 'created_at',
             label: 'Joined',
             sortable: true,
-            render: (value) =>
-                new Date(value).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                }),
+            render: (value) => formatDate(value as string),
             className: 'text-muted-foreground',
         },
         {
@@ -258,10 +255,10 @@ export default function UsersIndex({
                 </div>
             ),
         },
-    ];
+    ], []);
 
     // Define filters
-    const filters: ColumnFilter[] = [
+    const filters: ColumnFilter[] = useMemo(() => [
         {
             key: 'user_type',
             label: 'User Type',
@@ -307,7 +304,13 @@ export default function UsersIndex({
                 value: group,
             })),
         },
-    ];
+    ], [
+        filterOptions.user_types,
+        filterOptions.statuses,
+        filterOptions.departments,
+        filterOptions.roles,
+        filterOptions.blood_groups,
+    ]);
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>

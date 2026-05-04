@@ -1,6 +1,7 @@
 import { ServerSideDataTable } from '@/base-components/base-data-table';
 import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, DataTableColumn, Permission } from '@/types';
@@ -98,12 +99,7 @@ export default function PermissionsIndex({ permissions, stats, queryParams }: Pe
             key: 'created_at',
             label: 'Created',
             sortable: true,
-            render: (value) =>
-                new Date(value).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                }),
+            render: (value) => formatDate(value as string),
             className: 'text-muted-foreground',
         },
         {

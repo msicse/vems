@@ -2,15 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use App\Models\Factory;
-use Illuminate\Http\Request;
 use App\Http\Requests\FactoryIndexRequest;
 use App\Http\Requests\FactoryStoreRequest;
 use App\Http\Requests\FactoryUpdateRequest;
+use App\Models\Factory;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Inertia\Inertia;
 
-class FactoryController extends Controller
+class FactoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-factories', only: ['index', 'show']),
+            new Middleware('permission:create-factories', only: ['create', 'store']),
+            new Middleware('permission:edit-factories', only: ['edit', 'update']),
+            new Middleware('permission:delete-factories', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -58,12 +69,20 @@ class FactoryController extends Controller
             'cities' => Factory::distinct()->pluck('city')->filter()->sort()->values(),
         ];
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $factoryStats = Factory::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as inactive, ' .
+            'COUNT(DISTINCT city) as cities',
+            ['active', 'inactive']
+        )->first();
+
         $stats = [
-            'total' => Factory::count(),
-            'active' => Factory::where('status', 'active')->count(),
-            'inactive' => Factory::where('status', 'inactive')->count(),
-            'cities' => Factory::distinct()->count('city'),
+            'total' => (int) ($factoryStats->total ?? 0),
+            'active' => (int) ($factoryStats->active ?? 0),
+            'inactive' => (int) ($factoryStats->inactive ?? 0),
+            'cities' => (int) ($factoryStats->cities ?? 0),
         ];
 
         return Inertia::render('factories/index', [

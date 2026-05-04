@@ -2,17 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use App\Models\Product;
-use Illuminate\Http\Request;
 use App\Exports\ProductsExport;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\ProductIndexRequest;
 use App\Http\Requests\ProductStoreRequest;
+use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
-class ProductController extends Controller
+class ProductController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-products', only: ['index', 'show', 'export']),
+            new Middleware('permission:create-products', only: ['create', 'store']),
+            new Middleware('permission:edit-products', only: ['edit', 'update']),
+            new Middleware('permission:delete-products', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -59,12 +71,20 @@ class ProductController extends Controller
             'statuses' => ['active', 'inactive', 'pending'],
         ];
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $productStats = Product::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+            'COUNT(DISTINCT category) as categories, ' .
+            'COALESCE(SUM(price), 0) as total_value',
+            ['active']
+        )->first();
+
         $stats = [
-            'total' => Product::count(),
-            'active' => Product::where('status', 'active')->count(),
-            'categories' => Product::distinct()->count('category'),
-            'total_value' => Product::sum('price'),
+            'total' => (int) ($productStats->total ?? 0),
+            'active' => (int) ($productStats->active ?? 0),
+            'categories' => (int) ($productStats->categories ?? 0),
+            'total_value' => (float) ($productStats->total_value ?? 0),
         ];
 
         return Inertia::render('products/index', [

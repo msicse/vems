@@ -2,15 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
+use App\Models\RouteStop;
 use App\Models\Stop;
 use App\Models\VehicleRoute;
-use App\Models\RouteStop;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
-class VehicleRouteController extends Controller
+class VehicleRouteController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-routes', only: ['index', 'show']),
+            new Middleware('permission:create-routes', only: ['create', 'store']),
+            new Middleware('permission:edit-routes', only: ['edit', 'update']),
+            new Middleware('permission:delete-routes', only: ['destroy']),
+        ];
+    }
+
     /**
      * Calculate distance between two coordinates using Haversine formula
      */
@@ -114,12 +126,19 @@ class VehicleRouteController extends Controller
         $routes = $query->paginate($perPage)
             ->withQueryString();
 
-        // Get stats
+        // Get stats with reduced query duplication
+        $routeStats = VehicleRoute::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM route_stops rs WHERE rs.vehicle_route_id = vehicle_routes.id) THEN 1 ELSE 0 END) as routes_with_stops'
+        )->first();
+        $totalStops = Stop::count();
+        $routeStopCount = RouteStop::count();
+
         $stats = [
-            'total' => VehicleRoute::count(),
-            'total_stops' => Stop::count(),
-            'routes_with_stops' => VehicleRoute::has('routeStops')->count(),
-            'avg_stops_per_route' => round(RouteStop::count() / max(VehicleRoute::count(), 1), 1),
+            'total' => (int) ($routeStats->total ?? 0),
+            'total_stops' => (int) $totalStops,
+            'routes_with_stops' => (int) ($routeStats->routes_with_stops ?? 0),
+            'avg_stops_per_route' => round($routeStopCount / max((int) ($routeStats->total ?? 0), 1), 1),
         ];
 
         return Inertia::render('routes/index', [

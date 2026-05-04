@@ -2,14 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
-class RoleController extends Controller
+class RoleController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-roles', only: ['index', 'show']),
+            new Middleware('permission:create-roles', only: ['create', 'store']),
+            new Middleware('permission:edit-roles', only: ['edit', 'update']),
+            new Middleware('permission:delete-roles', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -35,19 +47,21 @@ class RoleController extends Controller
         $roles = $query->paginate($request->get('per_page', 15))
             ->withQueryString();
 
-        // Get stats
-        $stats = [
-            'total' => Role::count(),
-            'with_users' => Role::has('users')->count(),
-            'with_permissions' => Role::has('permissions')->count(),
-            'empty' => Role::doesntHave('users')->doesntHave('permissions')->count(),
-        ];
+        // Get stats with a single aggregate query
+        $roleStats = Role::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM model_has_roles mhr WHERE mhr.role_id = roles.id AND mhr.model_type = ?) THEN 1 ELSE 0 END) as with_users, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.role_id = roles.id) THEN 1 ELSE 0 END) as with_permissions, ' .
+            'SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM model_has_roles mhr WHERE mhr.role_id = roles.id AND mhr.model_type = ?) AND NOT EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.role_id = roles.id) THEN 1 ELSE 0 END) as empty',
+            [User::class, User::class]
+        )->first();
 
-        \Log::info('Roles Index', [
-            'roles_count' => $roles->count(),
-            'total' => $roles->total(),
-            'stats' => $stats,
-        ]);
+        $stats = [
+            'total' => (int) ($roleStats->total ?? 0),
+            'with_users' => (int) ($roleStats->with_users ?? 0),
+            'with_permissions' => (int) ($roleStats->with_permissions ?? 0),
+            'empty' => (int) ($roleStats->empty ?? 0),
+        ];
 
         return Inertia::render('roles/index', [
             'roles' => $roles,

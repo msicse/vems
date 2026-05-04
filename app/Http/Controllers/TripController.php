@@ -12,11 +12,24 @@ use App\Models\Department;
 use App\Models\Factory;
 use App\Models\Logistics;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
-class TripController extends Controller
+class TripController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-trips', only: ['index', 'show', 'passengerEvents']),
+            new Middleware('permission:create-trips', only: ['create', 'store', 'storeRecurring']),
+            new Middleware('permission:edit-trips', only: ['edit', 'update', 'start', 'complete', 'cancel', 'reassignVehicle']),
+            new Middleware('permission:delete-trips', only: ['destroy']),
+            new Middleware('permission:approve-trips', only: ['approve', 'reject']),
+        ];
+    }
+
     /**
      * Display a cross-trip passenger events log
      */
@@ -105,6 +118,11 @@ class TripController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate([
+            'sort' => 'nullable|in:scheduled_date,trip_number,status,priority,created_at',
+            'direction' => 'nullable|in:asc,desc',
+        ]);
+
         $query = Trip::with([
             'vehicle.driver',
             'vehicleRoute',
@@ -151,21 +169,31 @@ class TripController extends Controller
 
         // Apply sorting
         $sortColumn = $request->get('sort', 'scheduled_date');
-        $sortDirection = $request->get('direction', 'desc');
+        $sortDirection = $request->get('direction', 'desc') === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortColumn, $sortDirection);
 
         // Paginate
         $trips = $query->paginate($request->get('per_page', 15))
             ->withQueryString();
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $tripStats = Trip::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as approved, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as in_progress, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed, ' .
+            'SUM(CASE WHEN DATE(scheduled_date) = ? THEN 1 ELSE 0 END) as today',
+            ['pending', 'approved', 'in_progress', 'completed', today()->toDateString()]
+        )->first();
+
         $stats = [
-            'total' => Trip::count(),
-            'pending' => Trip::where('status', 'pending')->count(),
-            'approved' => Trip::where('status', 'approved')->count(),
-            'in_progress' => Trip::where('status', 'in_progress')->count(),
-            'completed' => Trip::where('status', 'completed')->count(),
-            'today' => Trip::whereDate('scheduled_date', today())->count(),
+            'total' => (int) ($tripStats->total ?? 0),
+            'pending' => (int) ($tripStats->pending ?? 0),
+            'approved' => (int) ($tripStats->approved ?? 0),
+            'in_progress' => (int) ($tripStats->in_progress ?? 0),
+            'completed' => (int) ($tripStats->completed ?? 0),
+            'today' => (int) ($tripStats->today ?? 0),
         ];
 
         return Inertia::render('trips/index', [
@@ -180,8 +208,10 @@ class TripController extends Controller
      */
     public function create()
     {
-        $vehicles = Vehicle::with('driver')
+        $vehicles = Vehicle::with('driver:id,name')
             ->where('is_active', true)
+            ->select(['id', 'registration_number', 'brand', 'model', 'driver_id'])
+            ->orderBy('registration_number')
             ->get()
             ->map(fn($v) => [
                 'value' => $v->id,
@@ -205,7 +235,10 @@ class TripController extends Controller
             ->get()
             ->map(fn($d) => ['value' => $d->id, 'label' => $d->name]);
 
-        $employees = User::where('status', 'active')
+        $employees = User::with('department:id,name')
+            ->where('status', 'active')
+            ->select(['id', 'name', 'employee_id', 'department_id'])
+            ->orderBy('name')
             ->get()
             ->map(fn($u) => [
                 'value' => $u->id,
@@ -257,14 +290,14 @@ class TripController extends Controller
             'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'department_id' => 'nullable|exists:departments,id',
-            'trip_type' => 'nullable|string',
+            'trip_type' => 'nullable|in:inspection,pick-up,drop-off,training,complaints,CVV,Incident Inspection,officials,Assigned',
             'team_number' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'remarks' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,urgent',
             'scheduled_date' => 'required|date',
-            'scheduled_start_time' => 'required',
-            'scheduled_end_time' => 'required',
+            'scheduled_start_time' => 'required|date_format:H:i',
+            'scheduled_end_time' => 'required|date_format:H:i|after:scheduled_start_time',
             'start_location' => 'nullable|string|max:255',
             'end_location' => 'nullable|string|max:255',
             'is_return' => 'boolean',
@@ -344,15 +377,15 @@ class TripController extends Controller
             'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'department_id' => 'nullable|exists:departments,id',
-            'trip_type' => 'nullable|string',
+            'trip_type' => 'nullable|in:inspection,pick-up,drop-off,training,complaints,CVV,Incident Inspection,officials,Assigned',
             'team_number' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'remarks' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,urgent',
             'recurring_start_date' => 'required|date',
             'recurring_end_date' => 'required|date|after_or_equal:recurring_start_date',
-            'scheduled_start_time' => 'required',
-            'scheduled_end_time' => 'required',
+            'scheduled_start_time' => 'required|date_format:H:i',
+            'scheduled_end_time' => 'required|date_format:H:i|after:scheduled_start_time',
             'start_location' => 'nullable|string|max:255',
             'end_location' => 'nullable|string|max:255',
             'is_return' => 'boolean',
@@ -469,7 +502,9 @@ class TripController extends Controller
 
         // Get active vehicles for reassignment option
         $availableVehicles = Vehicle::where('is_active', true)
-            ->with('driver')
+            ->with('driver:id,name')
+            ->select(['id', 'registration_number', 'brand', 'model', 'driver_id'])
+            ->orderBy('registration_number')
             ->get()
             ->map(fn($v) => [
                 'value' => $v->id,
@@ -496,8 +531,10 @@ class TripController extends Controller
 
         $trip->load(['passengers', 'logistics', 'factories', 'departments']);
 
-        $vehicles = Vehicle::with('driver')
+        $vehicles = Vehicle::with('driver:id,name')
             ->where('is_active', true)
+            ->select(['id', 'registration_number', 'brand', 'model', 'driver_id'])
+            ->orderBy('registration_number')
             ->get()
             ->map(fn($v) => [
                 'value' => $v->id,
@@ -521,7 +558,10 @@ class TripController extends Controller
             ->get()
             ->map(fn($d) => ['value' => $d->id, 'label' => $d->name]);
 
-        $employees = User::where('status', 'active')
+        $employees = User::with('department:id,name')
+            ->where('status', 'active')
+            ->select(['id', 'name', 'employee_id', 'department_id'])
+            ->orderBy('name')
             ->get()
             ->map(fn($u) => [
                 'value' => $u->id,
@@ -571,14 +611,14 @@ class TripController extends Controller
             'vehicle_route_id' => 'nullable|exists:vehicle_routes,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'department_id' => 'nullable|exists:departments,id',
-            'trip_type' => 'nullable|string',
+            'trip_type' => 'nullable|in:inspection,pick-up,drop-off,training,complaints,CVV,Incident Inspection,officials,Assigned',
             'team_number' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'remarks' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,urgent',
             'scheduled_date' => 'required|date',
-            'scheduled_start_time' => 'required',
-            'scheduled_end_time' => 'required',
+            'scheduled_start_time' => 'required|date_format:H:i',
+            'scheduled_end_time' => 'required|date_format:H:i|after:scheduled_start_time',
             'start_location' => 'nullable|string|max:255',
             'end_location' => 'nullable|string|max:255',
             'is_return' => 'boolean',

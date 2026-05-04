@@ -8,15 +8,27 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserIndexRequest;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Permission\Models\Role;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-users', only: ['index', 'show', 'export', 'getAvailableDrivers']),
+            new Middleware('permission:create-users', only: ['create', 'store', 'import']),
+            new Middleware('permission:edit-users', only: ['edit', 'update', 'updateDriverStatus']),
+            new Middleware('permission:delete-users', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of users.
      */
@@ -24,7 +36,29 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        $query = User::with(['department', 'roles']);
+        $query = User::select([
+            'id',
+            'name',
+            'username',
+            'employee_id',
+            'email',
+            'user_type',
+            'status',
+            'driver_status',
+            'department_id',
+            'blood_group',
+            'personal_phone',
+            'official_phone',
+            'created_at',
+            'image',
+            'photo',
+            'driving_license_no',
+            'license_class',
+            'license_expiry_date',
+            'total_trips_completed',
+            'average_rating',
+            ])
+            ->with(['department:id,name', 'roles:id,name']);
 
         // Apply search
         if (!empty($validated['search'])) {
@@ -114,12 +148,20 @@ class UserController extends Controller
         $bloodGroups = User::distinct()->pluck('blood_group')->filter()->values()->toArray();
         $roles = \Spatie\Permission\Models\Role::pluck('name')->toArray();
 
-        // Calculate stats
+        // Calculate stats with a single aggregate query
+        $userStats = User::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+            'SUM(CASE WHEN user_type IN (?, ?) THEN 1 ELSE 0 END) as drivers, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as inactive',
+            ['active', 'driver', 'transport_manager', 'inactive']
+        )->first();
+
         $stats = [
-            'total' => User::count(),
-            'active' => User::where('status', 'active')->count(),
-            'drivers' => User::whereIn('user_type', ['driver', 'transport_manager'])->count(),
-            'inactive' => User::where('status', 'inactive')->count(),
+            'total' => (int) ($userStats->total ?? 0),
+            'active' => (int) ($userStats->active ?? 0),
+            'drivers' => (int) ($userStats->drivers ?? 0),
+            'inactive' => (int) ($userStats->inactive ?? 0),
         ];
 
         return Inertia::render('users/index', [

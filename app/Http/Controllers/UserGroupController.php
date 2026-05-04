@@ -6,17 +6,29 @@ use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class UserGroupController extends Controller
+class UserGroupController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-user-groups', only: ['index', 'show', 'availableUsers']),
+            new Middleware('permission:create-user-groups', only: ['create', 'store']),
+            new Middleware('permission:edit-user-groups', only: ['edit', 'update', 'addMembers', 'removeMember']),
+            new Middleware('permission:delete-user-groups', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of user groups.
      */
     public function index(Request $request): Response
     {
-        $query = UserGroup::with(['creator', 'users']);
+        $query = UserGroup::with(['creator:id,name']);
 
         // Search
         if ($request->filled('search')) {
@@ -44,13 +56,20 @@ class UserGroupController extends Controller
                 'created_at' => $group->created_at->format('Y-m-d H:i'),
             ]);
 
+        $groupStats = UserGroup::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as inactive',
+            ['active', 'inactive']
+        )->first();
+
         return Inertia::render('user-groups/index', [
             'groups' => $groups,
             'filters' => $request->only(['search', 'status']),
             'stats' => [
-                'total' => UserGroup::count(),
-                'active' => UserGroup::where('status', 'active')->count(),
-                'inactive' => UserGroup::where('status', 'inactive')->count(),
+                'total' => (int) ($groupStats->total ?? 0),
+                'active' => (int) ($groupStats->active ?? 0),
+                'inactive' => (int) ($groupStats->inactive ?? 0),
             ],
         ]);
     }

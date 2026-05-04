@@ -50,6 +50,12 @@ class SetupPermissions extends Command
             'edit-vehicles',
             'delete-vehicles',
 
+            // Stop permissions
+            'view-stops',
+            'create-stops',
+            'edit-stops',
+            'delete-stops',
+
             // Product permissions
             'view-products',
             'create-products',
@@ -102,6 +108,7 @@ class SetupPermissions extends Command
             'view-users', 'edit-users',
             'view-departments', 'edit-departments',
             'view-vehicles', 'edit-vehicles',
+            'view-stops',
             'view-products', 'edit-products',
             'view-vendors', 'edit-vendors',
             'view-dashboard', 'view-reports'
@@ -112,6 +119,7 @@ class SetupPermissions extends Command
         $employeePermissions = [
             'view-departments',
             'view-vehicles',
+            'view-stops',
             'view-products',
             'view-vendors',
             'view-dashboard'
@@ -121,6 +129,7 @@ class SetupPermissions extends Command
         // Assign minimal permissions to Driver
         $driverPermissions = [
             'view-vehicles',
+            'view-stops',
             'view-dashboard'
         ];
         $driver->syncPermissions($driverPermissions);

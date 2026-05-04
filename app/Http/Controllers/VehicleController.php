@@ -2,22 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
+use App\Http\Requests\VehicleIndexRequest;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
-use App\Http\Requests\VehicleIndexRequest;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Inertia\Inertia;
 
-class VehicleController extends Controller
+class VehicleController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-vehicles', only: ['index', 'show', 'getExpiringVehicles']),
+            new Middleware('permission:create-vehicles', only: ['create', 'store']),
+            new Middleware('permission:edit-vehicles', only: ['edit', 'update']),
+            new Middleware('permission:delete-vehicles', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(VehicleIndexRequest $request)
     {
         $validated = $request->validated();
-
-        // Debug: Log filters
-        \Log::info('Vehicle Index Filters:', ['filters' => $validated['filters'] ?? []]);
 
         $query = Vehicle::with(['vendor', 'driver']);
 
@@ -121,12 +130,19 @@ class VehicleController extends Controller
             ],
         ];
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $vehicleStats = Vehicle::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active, ' .
+            'COUNT(DISTINCT brand) as brands, ' .
+            'SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive'
+        )->first();
+
         $stats = [
-            'total' => Vehicle::count(),
-            'active' => Vehicle::where('is_active', true)->count(),
-            'brands' => Vehicle::distinct()->count('brand'),
-            'inactive' => Vehicle::where('is_active', false)->count(),
+            'total' => (int) ($vehicleStats->total ?? 0),
+            'active' => (int) ($vehicleStats->active ?? 0),
+            'brands' => (int) ($vehicleStats->brands ?? 0),
+            'inactive' => (int) ($vehicleStats->inactive ?? 0),
         ];
 
         return Inertia::render('vehicles/index', [

@@ -1,12 +1,14 @@
 import { ServerSideDataTable } from '@/base-components/base-data-table';
 import { PageHeader } from '@/base-components/page-header';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem, DataTableColumn, Trip } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Calendar, Car, CheckCircle, Clock, Edit, Eye, FileText, MapPin, Plus, Trash2, TrendingUp, User, XCircle } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface PaginatedTrips {
     data: Trip[];
@@ -75,7 +77,7 @@ const getPriorityBadge = (priority: Trip['priority']) => {
 };
 
 export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps) {
-    const columns: DataTableColumn<Trip>[] = [
+    const columns: DataTableColumn<Trip>[] = useMemo(() => [
         {
             key: 'trip_number',
             label: 'Trip Number',
@@ -92,11 +94,7 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
                 <div className="flex flex-col space-y-1">
                     <div className="flex items-center text-sm font-medium">
                         <Calendar className="mr-1.5 h-3.5 w-3.5 text-gray-500" />
-                        {new Date(row.scheduled_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                        })}
+                        {formatDate(row.scheduled_date)}
                     </div>
                     <div className="flex items-center text-xs text-gray-500">
                         <Clock className="mr-1.5 h-3 w-3" />
@@ -213,9 +211,9 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
                 </div>
             ),
         },
-    ];
+    ], []);
 
-    const filters = [
+    const filters = useMemo(() => [
         {
             key: 'status',
             label: 'Status',
@@ -271,7 +269,7 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
             ],
             type: 'select' as const,
         },
-    ];
+    ], []);
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>

@@ -8,12 +8,24 @@ use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Requests\DepartmentIndexRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
-class DepartmentController extends Controller
+class DepartmentController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-departments', only: ['index', 'show', 'export']),
+            new Middleware('permission:create-departments', only: ['create', 'store', 'import']),
+            new Middleware('permission:edit-departments', only: ['edit', 'update', 'toggleStatus']),
+            new Middleware('permission:delete-departments', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of departments.
      */

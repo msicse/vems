@@ -2,13 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Illuminate\Http\Request;
 
-class PermissionController extends Controller
+class PermissionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-permissions', only: ['index', 'show']),
+            new Middleware('permission:edit-permissions', only: ['create', 'store', 'edit', 'update', 'destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -34,12 +45,20 @@ class PermissionController extends Controller
         $permissions = $query->paginate($request->get('per_page', 15))
             ->withQueryString();
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $permissionStats = Permission::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.permission_id = permissions.id) THEN 1 ELSE 0 END) as with_roles, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM model_has_permissions mhp WHERE mhp.permission_id = permissions.id AND mhp.model_type = ?) THEN 1 ELSE 0 END) as with_users, ' .
+            'SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.permission_id = permissions.id) AND NOT EXISTS (SELECT 1 FROM model_has_permissions mhp WHERE mhp.permission_id = permissions.id AND mhp.model_type = ?) THEN 1 ELSE 0 END) as unused',
+            [User::class, User::class]
+        )->first();
+
         $stats = [
-            'total' => Permission::count(),
-            'with_roles' => Permission::has('roles')->count(),
-            'with_users' => Permission::has('users')->count(),
-            'unused' => Permission::doesntHave('roles')->doesntHave('users')->count(),
+            'total' => (int) ($permissionStats->total ?? 0),
+            'with_roles' => (int) ($permissionStats->with_roles ?? 0),
+            'with_users' => (int) ($permissionStats->with_users ?? 0),
+            'unused' => (int) ($permissionStats->unused ?? 0),
         ];
 
         return Inertia::render('permissions/index', [

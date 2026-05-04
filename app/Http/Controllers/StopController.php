@@ -3,11 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Stop;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class StopController extends Controller
+class StopController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-stops', only: ['index']),
+            new Middleware('permission:create-stops', only: ['store']),
+        ];
+    }
+
     /**
      * Store a newly created stop via API.
      */

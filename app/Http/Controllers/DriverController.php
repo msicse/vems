@@ -7,16 +7,27 @@ use App\Models\Department;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserIndexRequest;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
-class DriverController extends Controller
+class DriverController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-drivers', only: ['index', 'show']),
+            new Middleware('permission:create-drivers', only: ['create', 'store']),
+            new Middleware('permission:edit-drivers', only: ['edit', 'update']),
+            new Middleware('permission:delete-drivers', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of drivers only.
      */
@@ -24,7 +35,29 @@ class DriverController extends Controller
     {
         $validated = $request->validated();
 
-        $query = User::with(['department', 'roles'])
+        $query = User::select([
+                'id',
+                'name',
+                'username',
+                'employee_id',
+                'email',
+                'user_type',
+                'status',
+                'driver_status',
+                'department_id',
+                'blood_group',
+                'area',
+                'personal_phone',
+                'official_phone',
+                'created_at',
+                'driving_license_no',
+                'license_class',
+                'license_expiry_date',
+                'license_issue_date',
+                'total_trips_completed',
+                'average_rating',
+            ])
+            ->with(['department:id,name', 'roles:id,name'])
             ->whereIn('user_type', ['driver', 'transport_manager']);
 
         // Apply search
@@ -118,11 +151,21 @@ class DriverController extends Controller
         $bloodGroups = User::distinct()->pluck('blood_group')->filter()->values()->toArray();
         $roles = Role::pluck('name')->toArray();
 
+        $driverStats = User::whereIn('user_type', ['driver', 'transport_manager'])
+            ->selectRaw(
+                'COUNT(*) as total, ' .
+                'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+                'SUM(CASE WHEN driver_status = ? THEN 1 ELSE 0 END) as available, ' .
+                'SUM(CASE WHEN driver_status = ? THEN 1 ELSE 0 END) as on_trip',
+                ['active', 'available', 'on_trip']
+            )
+            ->first();
+
         $stats = [
-            'total' => User::whereIn('user_type', ['driver', 'transport_manager'])->count(),
-            'active' => User::whereIn('user_type', ['driver', 'transport_manager'])->where('status', 'active')->count(),
-            'available' => User::whereIn('user_type', ['driver', 'transport_manager'])->where('driver_status', 'available')->count(),
-            'on_trip' => User::whereIn('user_type', ['driver', 'transport_manager'])->where('driver_status', 'on_trip')->count(),
+            'total' => (int) ($driverStats->total ?? 0),
+            'active' => (int) ($driverStats->active ?? 0),
+            'available' => (int) ($driverStats->available ?? 0),
+            'on_trip' => (int) ($driverStats->on_trip ?? 0),
         ];
 
         return Inertia::render('drivers/index', [

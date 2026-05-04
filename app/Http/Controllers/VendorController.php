@@ -5,18 +5,32 @@ namespace App\Http\Controllers;
 use App\Models\Vendor;
 use App\Models\VendorContactPerson;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
-class VendorController extends Controller
+class VendorController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view-vendors', only: ['index', 'show', 'getVendorsForSelect']),
+            new Middleware('permission:create-vendors', only: ['create', 'store']),
+            new Middleware('permission:edit-vendors', only: ['edit', 'update']),
+            new Middleware('permission:delete-vendors', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Vendor::with(['contactPersons', 'vehicles']);
+        $query = Vendor::with([
+            'contactPersons:id,vendor_id',
+            'vehicles:id,vendor_id',
+        ])->withCount('vehicles');
 
         // Search functionality
         if ($request->filled('search')) {
@@ -42,12 +56,20 @@ class VendorController extends Controller
         $vendors = $query->paginate($request->get('per_page', 15))
             ->withQueryString();
 
-        // Get stats
+        // Get stats with a single aggregate query
+        $vendorStats = Vendor::selectRaw(
+            'COUNT(*) as total, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active, ' .
+            'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as inactive, ' .
+            'SUM(CASE WHEN EXISTS (SELECT 1 FROM vehicles WHERE vehicles.vendor_id = vendors.id) THEN 1 ELSE 0 END) as with_vehicles',
+            ['active', 'inactive']
+        )->first();
+
         $stats = [
-            'total' => Vendor::count(),
-            'active' => Vendor::where('status', 'active')->count(),
-            'inactive' => Vendor::where('status', 'inactive')->count(),
-            'with_vehicles' => Vendor::has('vehicles')->count(),
+            'total' => (int) ($vendorStats->total ?? 0),
+            'active' => (int) ($vendorStats->active ?? 0),
+            'inactive' => (int) ($vendorStats->inactive ?? 0),
+            'with_vehicles' => (int) ($vendorStats->with_vehicles ?? 0),
         ];
 
         return Inertia::render('vendors/index', [
