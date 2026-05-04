@@ -157,7 +157,7 @@ export default function LogisticsIndex({ logistics, departments, filters, stats 
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-amber-50 hover:text-amber-600"
             onClick={() => handleToggleLock(logistic.id)}
             title={logistic.status === 'active' ? 'Deactivate' : 'Activate'}
           >
@@ -168,22 +168,22 @@ export default function LogisticsIndex({ logistics, departments, filters, stats 
             )}
           </Button>
           <Link href={route('logistics.show', logistic.id)}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Button variant="ghost" size="sm" className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-blue-50 hover:text-blue-600">
               <Eye className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <Link href={route('logistics.edit', logistic.id)}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Button variant="ghost" size="sm" className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-indigo-50 hover:text-indigo-600">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600"
             onClick={() => handleDelete(logistic.id)}
           >
-            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),

@@ -147,22 +147,22 @@ export default function UserGroupsIndex({ groups, filters, stats }: UserGroupsIn
       render: (group: UserGroup) => (
         <div className="flex items-center gap-1">
           <Link href={route('user-groups.show', group.id)}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Button variant="ghost" size="sm" className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-blue-50 hover:text-blue-600">
               <Eye className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <Link href={route('user-groups.edit', group.id)}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Button variant="ghost" size="sm" className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-indigo-50 hover:text-indigo-600">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-7 w-7 cursor-pointer p-0 transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600"
             onClick={() => handleDelete(group.id)}
           >
-            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),

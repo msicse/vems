@@ -141,6 +141,7 @@ export default function ProductsIndex({ products, filterOptions, stats, queryPar
                             alert(`View product: ${row.name}`);
                         }}
                         title="View product"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-blue-50 hover:text-blue-600"
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
@@ -152,6 +153,7 @@ export default function ProductsIndex({ products, filterOptions, stats, queryPar
                             alert(`Edit product: ${row.name}`);
                         }}
                         title="Edit product"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-indigo-50 hover:text-indigo-600"
                     >
                         <Edit className="h-4 w-4" />
                     </Button>
@@ -165,7 +167,7 @@ export default function ProductsIndex({ products, filterOptions, stats, queryPar
                             }
                         }}
                         title="Delete product"
-                        className="text-destructive hover:text-destructive"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600"
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>

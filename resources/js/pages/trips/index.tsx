@@ -198,6 +198,7 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
                         variant="ghost"
                         size="sm"
                         onClick={() => router.visit(route('trips.show', row.id))}
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-blue-50 hover:text-blue-600"
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
@@ -205,6 +206,7 @@ export default function TripsIndex({ trips, stats, queryParams }: TripsPageProps
                         variant="ghost"
                         size="sm"
                         onClick={() => router.visit(route('trips.edit', row.id))}
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-indigo-50 hover:text-indigo-600"
                     >
                         <Edit className="h-4 w-4" />
                     </Button>

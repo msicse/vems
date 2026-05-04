@@ -119,6 +119,7 @@ export default function RolesIndex({ roles, stats, queryParams }: RolesPageProps
                             router.visit(route('roles.show', row.id));
                         }}
                         title="View role"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-blue-50 hover:text-blue-600"
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
@@ -130,6 +131,7 @@ export default function RolesIndex({ roles, stats, queryParams }: RolesPageProps
                             router.visit(route('roles.edit', row.id));
                         }}
                         title="Edit role"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-indigo-50 hover:text-indigo-600"
                     >
                         <Edit className="h-4 w-4" />
                     </Button>
@@ -145,7 +147,7 @@ export default function RolesIndex({ roles, stats, queryParams }: RolesPageProps
                             }
                         }}
                         title="Delete role"
-                        className="text-destructive hover:text-destructive"
+                        className="cursor-pointer transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600"
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>
