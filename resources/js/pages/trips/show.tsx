@@ -52,15 +52,33 @@ type AttendanceFormShape = {
     idempotency_key: string;
 };
 
+type TripFactory = {
+    id: number;
+    name: string;
+};
+
+type TripDepartmentWithHeadcount = {
+    id: number;
+    name: string;
+    pivot?: {
+        count?: number;
+    };
+};
+
+type TripDetails = Trip & {
+    factories?: TripFactory[];
+    departments?: TripDepartmentWithHeadcount[];
+};
+
 const getStatusBadge = (status: Trip['status']) => {
     const config = {
-        pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-        approved: { label: 'Approved', className: 'bg-blue-100 text-blue-800 border-blue-200', icon: CheckCircle },
-        rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
-        assigned: { label: 'Assigned', className: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: CheckCircle },
-        in_progress: { label: 'In Progress', className: 'bg-purple-100 text-purple-800 border-purple-200', icon: Clock },
-        completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-        cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800 border-gray-200', icon: XCircle },
+        pending: { label: 'Pending', className: 'border-yellow-200 bg-yellow-100 text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/15 dark:text-yellow-300', icon: Clock },
+        approved: { label: 'Approved', className: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300', icon: CheckCircle },
+        rejected: { label: 'Rejected', className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300', icon: XCircle },
+        assigned: { label: 'Assigned', className: 'border-cyan-200 bg-cyan-100 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/15 dark:text-cyan-300', icon: CheckCircle },
+        in_progress: { label: 'In Progress', className: 'border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300', icon: Clock },
+        completed: { label: 'Completed', className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-300', icon: CheckCircle },
+        cancelled: { label: 'Cancelled', className: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300', icon: XCircle },
     };
     const { label, className, icon: Icon } = config[status] || config.pending;
 
@@ -74,10 +92,10 @@ const getStatusBadge = (status: Trip['status']) => {
 
 const getPriorityBadge = (priority: Trip['priority']) => {
     const config = {
-        urgent: { label: 'Urgent', className: 'bg-red-100 text-red-800 border-red-300', icon: Flag },
-        high: { label: 'High', className: 'bg-orange-100 text-orange-800 border-orange-200', icon: Flag },
-        medium: { label: 'Medium', className: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Flag },
-        low: { label: 'Low', className: 'bg-gray-100 text-gray-800 border-gray-200', icon: Flag },
+        urgent: { label: 'Urgent', className: 'border-red-300 bg-red-100 text-red-800 dark:border-red-500/40 dark:bg-red-500/20 dark:text-red-300', icon: Flag },
+        high: { label: 'High', className: 'border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300', icon: Flag },
+        medium: { label: 'Medium', className: 'border-yellow-200 bg-yellow-100 text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/15 dark:text-yellow-300', icon: Flag },
+        low: { label: 'Low', className: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300', icon: Flag },
     };
     const { label, className, icon: Icon } = config[priority] || config.medium;
 
@@ -89,17 +107,17 @@ const getPriorityBadge = (priority: Trip['priority']) => {
     );
 };
 
-const getPassengerStatusBadge = (status?: AttendanceTripPassenger['status']) => {
+const getPassengerStatusBadge = (status?: string) => {
     const config = {
-        pending: 'bg-slate-100 text-slate-800 border-slate-200',
-        confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-        boarded: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        completed: 'bg-green-100 text-green-800 border-green-200',
-        cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
-        no_show: 'bg-rose-100 text-rose-800 border-rose-200',
+        pending: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300',
+        confirmed: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300',
+        boarded: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300',
+        completed: 'border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-300',
+        cancelled: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300',
+        no_show: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300',
     } as const;
 
-    const value = status ?? 'pending';
+    const value = (status ?? 'pending') as keyof typeof config;
 
     return (
         <Badge variant="outline" className={`${config[value] ?? config.pending} capitalize`}>
@@ -110,11 +128,11 @@ const getPassengerStatusBadge = (status?: AttendanceTripPassenger['status']) => 
 
 const getEventBadge = (event: TripPassengerEvent) => {
     const config: Record<TripPassengerEvent['event_type'], string> = {
-        check_in: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        check_out: 'bg-blue-100 text-blue-800 border-blue-200',
-        no_show: 'bg-rose-100 text-rose-800 border-rose-200',
-        manual_override: 'bg-amber-100 text-amber-800 border-amber-200',
-        correction: 'bg-violet-100 text-violet-800 border-violet-200',
+        check_in: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300',
+        check_out: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300',
+        no_show: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300',
+        manual_override: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300',
+        correction: 'border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300',
     };
 
     return (
@@ -175,7 +193,7 @@ const buildFormDefaults = (mode: AttendanceMode, passenger: AttendanceTripPassen
     idempotency_key: '',
 });
 
-export default function ShowTrip({ trip }: { trip: Trip }) {
+export default function ShowTrip({ trip }: { trip: TripDetails }) {
     const pageProps = usePage().props as unknown as { auth?: { user?: unknown; permissions?: string[]; roles?: string[] } };
     const permissions = pageProps.auth?.permissions ?? [];
     const passengers = (trip.passengers ?? []) as AttendanceTripPassenger[];
@@ -545,7 +563,7 @@ export default function ShowTrip({ trip }: { trip: Trip }) {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap gap-2">
-                                        {trip.departments.map((dept) => (
+                                        {trip.departments.map((dept: TripDepartmentWithHeadcount) => (
                                             <div key={dept.id} className="flex items-center gap-2 rounded-full border bg-muted/30 px-3 py-1.5">
                                                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
                                                 <span className="text-sm font-medium">{dept.name}</span>

@@ -214,7 +214,7 @@ export default function CreateUser({ departments, roles, userTypes, licenseClass
           />
         </div>
 
-        {process.env.NODE_ENV === 'development' && Object.keys(clientErrors).length > 0 && (
+        {import.meta.env.DEV && Object.keys(clientErrors).length > 0 && (
           <div className="max-w-6xl">
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
               <h4 className="font-medium text-destructive text-sm mb-2">Validation Errors:</h4>

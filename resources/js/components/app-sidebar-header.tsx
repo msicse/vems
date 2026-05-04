@@ -36,7 +36,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                         <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
                             <Avatar className="h-8 w-8">
                                 <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                                <AvatarFallback className="bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                <AvatarFallback className="bg-muted text-foreground">
                                     {getInitials(auth.user.name)}
                                 </AvatarFallback>
                             </Avatar>

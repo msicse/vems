@@ -91,11 +91,11 @@ const EVENT_TYPE_COLORS: Record<string, 'default' | 'secondary' | 'destructive' 
 };
 
 const STATUS_COLORS: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    approved: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-purple-100 text-purple-800',
-    completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
+    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300',
+    approved: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
+    in_progress: 'bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-300',
+    completed: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+    cancelled: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300',
 };
 
 function formatDateTime(dt: string) {
@@ -145,7 +145,6 @@ export default function PassengerEvents({ events, stats, sources, trips, queryPa
                 <PageHeader
                     title="Passenger Events"
                     description="Cross-trip view of all passenger attendance events"
-                    icon={<CalendarClock className="h-6 w-6" />}
                 />
 
                 {/* Stats */}

@@ -111,13 +111,13 @@ export default function FlashMessages() {
   const getColorClasses = (type: FlashMessage['type']) => {
     switch (type) {
       case 'success':
-        return 'border-green-200/60 bg-green-50/90 text-green-900 dark:border-green-700/60 dark:bg-green-950/90 dark:text-green-100 [&_svg]:text-green-600 dark:[&_svg]:text-green-400';
+        return 'border-green-200/60 bg-green-50/90 text-green-900 dark:border-green-500/40 dark:bg-green-500/15 dark:text-green-100 [&_svg]:text-green-600 dark:[&_svg]:text-green-300';
       case 'error':
-        return 'border-red-200/60 bg-red-50/90 text-red-900 dark:border-red-700/60 dark:bg-red-950/90 dark:text-red-100 [&_svg]:text-red-600 dark:[&_svg]:text-red-400';
+        return 'border-red-200/60 bg-red-50/90 text-red-900 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-100 [&_svg]:text-red-600 dark:[&_svg]:text-red-300';
       case 'warning':
-        return 'border-amber-200/60 bg-amber-50/90 text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/90 dark:text-amber-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400';
+        return 'border-amber-200/60 bg-amber-50/90 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-300';
       case 'info':
-        return 'border-blue-200/60 bg-blue-50/90 text-blue-900 dark:border-blue-700/60 dark:bg-blue-950/90 dark:text-blue-100 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400';
+        return 'border-blue-200/60 bg-blue-50/90 text-blue-900 dark:border-blue-500/40 dark:bg-blue-500/15 dark:text-blue-100 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-300';
     }
   };
 
@@ -150,7 +150,7 @@ export default function FlashMessages() {
                 onClick={() => dismissMessage(message.id)}
                 className={cn(
                   'flex-shrink-0 ml-2 p-1 rounded-md transition-colors',
-                  'hover:bg-black/10 dark:hover:bg-white/10',
+                  'hover:bg-foreground/10',
                   'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent'
                 )}
                 aria-label="Dismiss notification"

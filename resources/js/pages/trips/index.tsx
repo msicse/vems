@@ -53,13 +53,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const getStatusBadge = (status: Trip['status']) => {
     const config = {
-        pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-        approved: { label: 'Approved', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-        rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
-        assigned: { label: 'Assigned', className: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
-        in_progress: { label: 'In Progress', className: 'bg-purple-100 text-purple-800 border-purple-200' },
-        completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
-        cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+        pending: { label: 'Pending', className: 'border-yellow-200 bg-yellow-100 text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/15 dark:text-yellow-300' },
+        approved: { label: 'Approved', className: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300' },
+        rejected: { label: 'Rejected', className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300' },
+        assigned: { label: 'Assigned', className: 'border-cyan-200 bg-cyan-100 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/15 dark:text-cyan-300' },
+        in_progress: { label: 'In Progress', className: 'border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300' },
+        completed: { label: 'Completed', className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-300' },
+        cancelled: { label: 'Cancelled', className: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300' },
     };
     const { label, className } = config[status] || config.pending;
     return <Badge className={className}>{label}</Badge>;
@@ -67,10 +67,10 @@ const getStatusBadge = (status: Trip['status']) => {
 
 const getPriorityBadge = (priority: Trip['priority']) => {
     const config = {
-        urgent: { label: 'Urgent', className: 'bg-red-100 text-red-800 border-red-300' },
-        high: { label: 'High', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-        medium: { label: 'Medium', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-        low: { label: 'Low', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+        urgent: { label: 'Urgent', className: 'border-red-300 bg-red-100 text-red-800 dark:border-red-500/40 dark:bg-red-500/20 dark:text-red-300' },
+        high: { label: 'High', className: 'border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300' },
+        medium: { label: 'Medium', className: 'border-yellow-200 bg-yellow-100 text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/15 dark:text-yellow-300' },
+        low: { label: 'Low', className: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300' },
     };
     const { label, className } = config[priority] || config.medium;
     return <Badge variant="outline" className={className}>{label}</Badge>;

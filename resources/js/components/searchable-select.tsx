@@ -100,12 +100,12 @@ export function SearchableSelect({
             <div className="relative" ref={dropdownRef}>
                 <div
                     className={`
-                        relative w-full cursor-pointer rounded-md border bg-white dark:bg-gray-800 px-3 py-2 text-left shadow-sm
+                        relative w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-left shadow-sm
                         ${error
                             ? 'border-red-300 focus-within:border-red-500 focus-within:ring-red-500'
-                            : 'border-gray-300 dark:border-gray-600 focus-within:border-indigo-500 focus-within:ring-indigo-500'
+                            : 'border-input focus-within:border-indigo-500 focus-within:ring-indigo-500'
                         }
-                        ${disabled ? 'bg-gray-50 dark:bg-gray-700 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
+                        ${disabled ? 'cursor-not-allowed bg-muted/70' : 'hover:border-border'}
                         focus-within:ring-1 transition-colors
                     `}
                     onClick={handleToggle}
@@ -145,7 +145,7 @@ export function SearchableSelect({
                 </div>
 
                 {isOpen && (
-                    <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
                         <div className="max-h-60 overflow-auto py-1">
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((option) => (

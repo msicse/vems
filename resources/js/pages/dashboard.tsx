@@ -196,20 +196,20 @@ export default function Dashboard() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'scheduled': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-            case 'in_progress': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-            case 'pending_approval': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-            case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+            case 'scheduled': return 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300';
+            case 'in_progress': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300';
+            case 'pending_approval': return 'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300';
+            case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300';
+            default: return 'bg-slate-100 text-slate-800 dark:bg-slate-500/15 dark:text-slate-300';
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-            case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-            case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+            case 'high': return 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300';
+            case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300';
+            case 'low': return 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300';
+            default: return 'bg-slate-100 text-slate-800 dark:bg-slate-500/15 dark:text-slate-300';
         }
     };
 
@@ -240,7 +240,7 @@ export default function Dashboard() {
                 <div
                     className={`flex items-center justify-between rounded-lg border px-5 py-4 ${
                         activeAttendanceAction
-                            ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950'
+                                ? 'border-green-300 bg-green-50 dark:border-green-500/30 dark:bg-green-500/15'
                             : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900'
                     }`}
                 >
@@ -248,7 +248,7 @@ export default function Dashboard() {
                         <div
                             className={`flex h-10 w-10 items-center justify-center rounded-full ${
                                 activeAttendanceAction
-                                    ? 'bg-green-100 dark:bg-green-900'
+                                        ? 'bg-green-100 dark:bg-green-500/20'
                                     : 'bg-slate-200 dark:bg-slate-800'
                             }`}
                         >
@@ -268,7 +268,7 @@ export default function Dashboard() {
                                     Active Trip: {activeAttendanceAction.trip_number}
                                 </p>
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-300">
-                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium dark:bg-green-900">
+                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium dark:bg-green-500/20">
                                         In Progress
                                     </span>
                                     <span>{formatHumanDateTime(activeAttendanceAction.scheduled_date)}</span>
@@ -315,7 +315,7 @@ export default function Dashboard() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Status At A Glance</h1>
+                        <h1 className="text-3xl font-bold text-foreground">Status At A Glance</h1>
                         {/*<p className="text-gray-600 dark:text-gray-400"></p>*/}
                     </div>
                     <div className="flex items-center space-x-4">
@@ -350,16 +350,16 @@ export default function Dashboard() {
                                     return (
                                         <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                             <div className={`p-2 rounded-full ${
-                                                activity.color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' :
-                                                activity.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' :
-                                                activity.color === 'orange' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400' :
-                                                activity.color === 'purple' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400' :
-                                                'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400'
+                                                activity.color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-300' :
+                                                activity.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' :
+                                                activity.color === 'orange' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300' :
+                                                activity.color === 'purple' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' :
+                                                'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300'
                                             }`}>
                                                 <IconComponent className="w-4 h-4" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                <p className="text-sm font-medium text-foreground">
                                                     {activity.message}
                                                 </p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -427,7 +427,7 @@ export default function Dashboard() {
                                             </Badge>
                                             <span className="text-sm font-medium text-blue-600">{schedule.time}</span>
                                         </div>
-                                        <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
+                                        <h4 className="mb-1 text-sm font-medium text-foreground">
                                             {schedule.route}
                                         </h4>
                                         <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
@@ -476,7 +476,7 @@ export default function Dashboard() {
                                                 {issue.status.replace('_', ' ')}
                                             </Badge>
                                         </div>
-                                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                                        <h4 className="mb-2 font-medium text-foreground">
                                             {issue.title}
                                         </h4>
                                         <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">

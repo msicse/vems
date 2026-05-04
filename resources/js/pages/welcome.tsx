@@ -21,9 +21,9 @@ export default function Welcome() {
     return (
         <>
             <Head title="RSC Vehicle Management System" />
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
                 {/* Header */}
-                <header className="relative z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-700">
+                <header className="relative z-10 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center py-4">
                             {/* Logo */}
@@ -100,7 +100,7 @@ export default function Welcome() {
                                 {/*</div>*/}
                             </div>
 
-                            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+                            <h1 className="mb-6 text-4xl font-bold text-gray-900 dark:text-gray-100 lg:text-6xl">
                                 Professional
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"> Vehicle </span>
                                 Management
@@ -128,10 +128,10 @@ export default function Welcome() {
                 </section>
 
                 {/* Features Section */}
-                <section className="py-20 bg-white dark:bg-gray-800">
+                <section className="bg-card py-20">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-16">
-                            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                            <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-gray-100 lg:text-4xl">
                                 Complete Fleet Management Solution
                             </h2>
                             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -141,11 +141,11 @@ export default function Welcome() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {/* Vehicle Management */}
-                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-6">
                                     <Car className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Vehicle Management</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Vehicle Management</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Complete vehicle tracking with registration, documentation, and maintenance records.
                                 </p>
@@ -166,11 +166,11 @@ export default function Welcome() {
                             </div>
 
                             {/* Driver Management */}
-                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mb-6">
                                     <UserCheck className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Driver Management</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Driver Management</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Comprehensive driver profiles with licenses, contacts, and emergency information.
                                 </p>
@@ -191,11 +191,11 @@ export default function Welcome() {
                             </div>
 
                             {/* Documentation */}
-                            <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-6">
                                     <FileText className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Documentation</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Documentation</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Track all vehicle documents, certificates, and compliance requirements.
                                 </p>
@@ -216,11 +216,11 @@ export default function Welcome() {
                             </div>
 
                             {/* Alerts & Notifications */}
-                            <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-red-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center mb-6">
                                     <AlertTriangle className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Smart Alerts</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Smart Alerts</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Automated notifications for document expiry and maintenance schedules.
                                 </p>
@@ -241,11 +241,11 @@ export default function Welcome() {
                             </div>
 
                             {/* Reporting */}
-                            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center mb-6">
                                     <BarChart3 className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Analytics & Reports</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Analytics & Reports</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Comprehensive reporting and analytics for fleet performance insights.
                                 </p>
@@ -266,11 +266,11 @@ export default function Welcome() {
                             </div>
 
                             {/* User Management */}
-                            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 p-8 rounded-2xl">
+                            <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 p-8 dark:from-slate-800 dark:to-slate-700">
                                 <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-6">
                                     <Shield className="w-6 h-6 text-white" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">User Management</h3>
+                                <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">User Management</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
                                     Role-based access control with secure user management and permissions.
                                 </p>
@@ -315,13 +315,13 @@ export default function Welcome() {
                 )}
 
                 {/* Footer */}
-                <footer className="bg-gray-900 text-white py-12">
+                <footer className="bg-slate-900 py-12 text-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             {/* Company Info */}
                             <div className="col-span-1 md:col-span-2">
                                 <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shadow-sm border border-gray-700">
+                                    <div className="h-10 w-10 overflow-hidden rounded-lg border border-slate-700 bg-white shadow-sm">
                                         <img
                                             src="/images/rsc.png"
                                             alt="RSC Logo"

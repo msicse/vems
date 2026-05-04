@@ -73,8 +73,7 @@ export function DatePicker({
                         className={cn(
                             // Base styles
                             "w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-all duration-200",
-                            "bg-white dark:bg-gray-800",
-                            "text-gray-900 dark:text-gray-100",
+                            "bg-background text-foreground",
                             "placeholder:text-gray-500 dark:placeholder:text-gray-400",
 
                             // Border styles

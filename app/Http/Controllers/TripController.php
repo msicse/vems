@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
-use App\Models\TripPassenger;
 use App\Models\TripPassengerEvent;
 use App\Models\Vehicle;
 use App\Models\VehicleRoute;

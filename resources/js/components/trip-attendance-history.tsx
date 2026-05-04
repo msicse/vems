@@ -20,11 +20,11 @@ interface AttendanceHistoryCardProps {
 
 const getEventBadge = (event: TripPassengerEvent) => {
     const config: Record<TripPassengerEvent['event_type'], string> = {
-        check_in: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        check_out: 'bg-blue-100 text-blue-800 border-blue-200',
-        no_show: 'bg-rose-100 text-rose-800 border-rose-200',
-        manual_override: 'bg-amber-100 text-amber-800 border-amber-200',
-        correction: 'bg-violet-100 text-violet-800 border-violet-200',
+        check_in: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300',
+        check_out: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300',
+        no_show: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300',
+        manual_override: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300',
+        correction: 'border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300',
     };
 
     return (

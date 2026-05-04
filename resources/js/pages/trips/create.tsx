@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, X, UserPlus, Calendar, MapPin, User, CalendarDays, Info, Building2, Plus, Minus, Users } from 'lucide-react';
+import { ArrowLeft, X, Calendar, MapPin, User, CalendarDays, Info, Building2, Plus, Minus, Users } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import * as React from 'react';
 
@@ -31,21 +31,35 @@ interface DeptHeadcount {
     count: number;
 }
 
+interface SelectOption {
+    value: string;
+    label: string;
+}
+
+interface VehicleOption extends SelectOption {
+    driver?: string | { name?: string };
+}
+
+interface EmployeeOption extends SelectOption {
+    employee_id?: string | number;
+    department?: string | { name?: string };
+}
+
+interface GroupOption extends SelectOption {
+    user_ids?: (string | number)[];
+}
+
 interface CreateTripProps {
-    vehicles: import('@/types').Vehicle[];
-    routes: import('@/types').VehicleRoute[];
-    departments: (import('@/types').Department & { label?: string })[];
-    employees: import('@/types').User[];
-    factories: (import('@/types').Factory & { label?: string })[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    userGroups: any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    logistics: any[];
+    vehicles: VehicleOption[];
+    routes: SelectOption[];
+    departments: SelectOption[];
+    employees: EmployeeOption[];
+    factories: SelectOption[];
+    userGroups: GroupOption[];
+    logistics: SelectOption[];
 }
 
 export default function CreateTrip({ vehicles, routes, departments, employees, factories, userGroups, logistics }: CreateTripProps) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [selectedRoute, setSelectedRoute] = useState<any>(null);
     const [selectedPassengerIds, setSelectedPassengerIds] = useState<(string | number)[]>([]);
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [selectedFactoryIds, setSelectedFactoryIds] = useState<(string | number)[]>([]);
@@ -79,7 +93,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
         team_number: '',
     });
 
-    const selectedVehicle = vehicles?.find((v: any) => v.value === data.vehicle_id);
+    const selectedVehicle = vehicles?.find((v) => String(v.value) === String(data.vehicle_id));
 
     // Calculate days count for recurring trips
     const daysCount = useMemo(() => {
@@ -96,17 +110,17 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
             user_id: id.toString(),
         }));
         setData('passengers', passengerData);
-    }, [selectedPassengerIds]);
+    }, [selectedPassengerIds, setData]);
 
     // Sync factories with form data
     React.useEffect(() => {
         setData('factory_ids', selectedFactoryIds);
-    }, [selectedFactoryIds]);
+    }, [selectedFactoryIds, setData]);
 
     // Sync logistics with form data
     React.useEffect(() => {
         setData('logistics_ids', selectedLogisticsIds);
-    }, [selectedLogisticsIds]);
+    }, [selectedLogisticsIds, setData]);
 
     const addDeptHeadcount = () => {
         if (!deptInput.department_id || deptInput.count < 1) return;
@@ -137,14 +151,12 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
 
     const handleRouteChange = (value: string) => {
         setData('vehicle_route_id', value);
-        const route = routes?.find((r: any) => r.value === value);
-        setSelectedRoute(route);
     };
 
     const handleGroupSelect = (groupId: string) => {
         setSelectedGroupId(groupId);
         if (!groupId) return;
-        const group = userGroups?.find((g: any) => g.value.toString() === groupId);
+        const group = userGroups?.find((g: GroupOption) => g.value.toString() === groupId);
         if (!group) return;
         const newIds = group.user_ids as (string | number)[];
         setSelectedPassengerIds(prev => {
@@ -156,13 +168,20 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
     };
 
     const getEmployeeDetails = (userId: string | number) => {
-        const employee = employees?.find((emp: any) => emp.value.toString() === userId.toString());
-        return employee ? {
-            name: employee.label,
-            employeeId: employee.employee_id,
-            department: employee.department
-        } : { name: 'Unknown', employeeId: '', department: '' };
+        const employee = employees?.find((emp) => emp.value.toString() === userId.toString());
+        return employee
+            ? {
+                  name: String(employee.label ?? ''),
+                  employeeId: employee.employee_id ? String(employee.employee_id) : '',
+                  department:
+                      typeof employee.department === 'string'
+                          ? employee.department
+                          : String(employee.department?.name ?? ''),
+              }
+            : { name: 'Unknown', employeeId: '', department: '' };
     };
+
+    const formError = (errors as Record<string, string | undefined>).error;
 
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
@@ -197,7 +216,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                         name="vehicle_id"
                                         value={data.vehicle_id}
                                         onChange={(value) => setData('vehicle_id', value)}
-                                        options={vehicles?.map((v: any) => ({ label: v.label, value: v.value })) || []}
+                                        options={vehicles?.map((v) => ({ label: v.label, value: v.value })) || []}
                                         placeholder="Search vehicle..."
                                         required
                                         error={errors.vehicle_id}
@@ -205,7 +224,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                     {selectedVehicle && (
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
                                             <User className="h-3 w-3" />
-                                            Driver: <strong>{selectedVehicle.driver}</strong>
+                                            Driver: <strong>{typeof selectedVehicle.driver === 'string' ? selectedVehicle.driver : selectedVehicle.driver?.name ?? 'Unassigned'}</strong>
                                         </div>
                                     )}
                                 </div>
@@ -214,7 +233,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                     name="vehicle_route_id"
                                     value={data.vehicle_route_id}
                                     onChange={handleRouteChange}
-                                    options={routes?.map((r: any) => ({ label: r.label, value: r.value })) || []}
+                                    options={routes?.map((r) => ({ label: r.label, value: r.value })) || []}
                                     placeholder="Search route..."
                                     error={errors.vehicle_route_id}
                                 />
@@ -262,7 +281,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                     name="department_id"
                                     value={data.department_id}
                                     onChange={(value) => setData('department_id', value)}
-                                    options={departments?.map((d: any) => ({ label: d.label, value: d.value })) || []}
+                                    options={departments?.map((d) => ({ label: d.label, value: d.value })) || []}
                                     placeholder="Select department..."
                                     error={errors.department_id}
                                 />
@@ -366,7 +385,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                             </CardHeader>
                             <CardContent className="px-4 pb-4 space-y-2">
                                 <MultiSelect
-                                    options={factories?.map((f: any) => ({
+                                    options={factories?.map((f) => ({
                                         label: f.label,
                                         value: f.value,
                                     })) || []}
@@ -383,7 +402,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                 ) : (
                                     <div className="flex flex-wrap gap-1.5">
                                         {selectedFactoryIds.map((id) => {
-                                            const factory = factories?.find((f: any) => f.value.toString() === id.toString());
+                                            const factory = factories?.find((f) => f.value.toString() === id.toString());
                                             return (
                                                 <div key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-muted/30 text-xs">
                                                     <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -425,7 +444,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                         className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                                     >
                                         <option value="">Select department...</option>
-                                        {departments?.map((d: any) => (
+                                        {departments?.map((d) => (
                                             <option key={d.value} value={d.value.toString()}>{d.label}</option>
                                         ))}
                                     </select>
@@ -477,7 +496,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                 ) : (
                                     <div className="flex flex-wrap gap-2">
                                         {data.department_slots.map((d) => {
-                                            const dept = departments?.find((dep: any) => dep.value.toString() === d.department_id);
+                                            const dept = departments?.find((dep) => dep.value.toString() === d.department_id);
                                             return (
                                                 <div key={d.department_id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-muted/30">
                                                     <Users className="h-3 w-3 text-muted-foreground" />
@@ -513,7 +532,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                             </CardHeader>
                             <CardContent className="px-4 pb-4 space-y-2">
                                 <MultiSelect
-                                    options={logistics?.map((l: any) => ({
+                                    options={logistics?.map((l) => ({
                                         label: l.label,
                                         value: l.value,
                                     })) || []}
@@ -530,7 +549,7 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                 ) : (
                                     <div className="flex flex-wrap gap-1.5">
                                         {selectedLogisticsIds.map((id) => {
-                                            const log = logistics?.find((l: any) => l.value.toString() === id.toString());
+                                            const log = logistics?.find((l) => l.value.toString() === id.toString());
                                             return (
                                                 <div key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-muted/30 text-xs">
                                                     <span className="font-medium truncate max-w-[140px]">{log?.label ?? id}</span>
@@ -716,10 +735,10 @@ export default function CreateTrip({ vehicles, routes, departments, employees, f
                                 rows={2}
                                 error={errors.notes}
                             />
-                            {errors.error && (
+                            {formError && (
                                 <Alert variant="destructive">
                                     <AlertTitle>Error</AlertTitle>
-                                    <AlertDescription>{errors.error}</AlertDescription>
+                                    <AlertDescription>{formError}</AlertDescription>
                                 </Alert>
                             )}
                             <div className="flex justify-end gap-2 pt-1">
