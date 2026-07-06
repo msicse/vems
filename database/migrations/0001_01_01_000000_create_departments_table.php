@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('code')->unique(); // HR, IT, TRANSPORT, ADMIN
             $table->text('description')->nullable();
-            $table->foreignId(column: 'head_id')->nullable()->constrained('users')->onDelete('set null'); // Department head
+            // head_id foreign key will be added in a separate migration after users table exists
+            $table->unsignedBigInteger('head_id')->nullable(); // Department head
             $table->string('location')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
