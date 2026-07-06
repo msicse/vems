@@ -166,7 +166,10 @@ class FactorySeeder extends Seeder
         ];
 
         foreach ($factories as $factory) {
-            Factory::create($factory);
+            Factory::updateOrCreate(
+                ['account_id' => $factory['account_id']],
+                $factory
+            );
         }
 
         $this->command->info('Created ' . count($factories) . ' factories successfully!');

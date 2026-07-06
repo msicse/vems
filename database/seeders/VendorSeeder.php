@@ -155,7 +155,13 @@ class VendorSeeder extends Seeder
             $contacts = $vendorData['contacts'];
             unset($vendorData['contacts']);
 
-            $vendor = Vendor::create($vendorData);
+            $vendor = Vendor::updateOrCreate(
+                ['email' => $vendorData['email']],
+                $vendorData
+            );
+
+            // Delete existing contacts and recreate to avoid duplicates
+            $vendor->contactPersons()->delete();
 
             foreach ($contacts as $contactData) {
                 $vendor->contactPersons()->create($contactData);

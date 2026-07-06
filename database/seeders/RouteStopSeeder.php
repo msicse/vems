@@ -14,10 +14,24 @@ class RouteStopSeeder extends Seeder
      */
     public function run(): void
     {
-        // Clear existing data
+        // Clear existing data - disable foreign key checks for truncate
+        $driver = \DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        } elseif ($driver === 'sqlite') {
+            \DB::statement('PRAGMA foreign_keys = OFF;');
+        }
+
         RouteStop::truncate();
         VehicleRoute::truncate();
         Stop::truncate();
+
+        if ($driver === 'mysql') {
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } elseif ($driver === 'sqlite') {
+            \DB::statement('PRAGMA foreign_keys = ON;');
+        }
 
         // Create 30 unique stops (enough for variety)
         $this->command->info('Creating stops...');
