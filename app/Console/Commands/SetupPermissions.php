@@ -71,7 +71,8 @@ class SetupPermissions extends Command
             // Dashboard and reports
             'view-dashboard',
             'view-reports',
-            'export-data',
+            'create-reports',
+            'export-reports',
 
             // Role and permission management
             'view-roles',
@@ -111,7 +112,7 @@ class SetupPermissions extends Command
             'view-stops',
             'view-products', 'edit-products',
             'view-vendors', 'edit-vendors',
-            'view-dashboard', 'view-reports'
+            'view-dashboard', 'view-reports', 'export-reports'
         ];
         $manager->syncPermissions($managerPermissions);
 

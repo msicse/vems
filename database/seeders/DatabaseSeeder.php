@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             VendorSeeder::class,
             FactorySeeder::class,
             RouteStopSeeder::class,
+            TripSeeder::class,
         ]);
     }
 }

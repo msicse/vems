@@ -17,6 +17,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\TripPassengerController;
 use App\Http\Controllers\TripStateController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FactoryController;
 use App\Http\Controllers\LogisticsController;
@@ -98,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/trips/recurring', [TripController::class, 'storeRecurring'])->name('trips.store-recurring');
     Route::get('/trips/passenger-events', [TripController::class, 'passengerEvents'])->name('trips.passenger-events');
     Route::resource('trips', TripController::class);
+
+    // Reports routes
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     // Trip state routes
     Route::post('/trips/{trip}/approve', [TripStateController::class, 'approve'])->name('trips.approve');
