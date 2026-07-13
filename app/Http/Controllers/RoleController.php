@@ -52,7 +52,7 @@ class RoleController extends Controller implements HasMiddleware
             'COUNT(*) as total, ' .
             'SUM(CASE WHEN EXISTS (SELECT 1 FROM model_has_roles mhr WHERE mhr.role_id = roles.id AND mhr.model_type = ?) THEN 1 ELSE 0 END) as with_users, ' .
             'SUM(CASE WHEN EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.role_id = roles.id) THEN 1 ELSE 0 END) as with_permissions, ' .
-            'SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM model_has_roles mhr WHERE mhr.role_id = roles.id AND mhr.model_type = ?) AND NOT EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.role_id = roles.id) THEN 1 ELSE 0 END) as empty',
+            'SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM model_has_roles mhr WHERE mhr.role_id = roles.id AND mhr.model_type = ?) AND NOT EXISTS (SELECT 1 FROM role_has_permissions rhp WHERE rhp.role_id = roles.id) THEN 1 ELSE 0 END) as empty_roles',
             [User::class, User::class]
         )->first();
 
@@ -60,7 +60,7 @@ class RoleController extends Controller implements HasMiddleware
             'total' => (int) ($roleStats->total ?? 0),
             'with_users' => (int) ($roleStats->with_users ?? 0),
             'with_permissions' => (int) ($roleStats->with_permissions ?? 0),
-            'empty' => (int) ($roleStats->empty ?? 0),
+            'empty' => (int) ($roleStats->empty_roles ?? 0),
         ];
 
         return Inertia::render('roles/index', [

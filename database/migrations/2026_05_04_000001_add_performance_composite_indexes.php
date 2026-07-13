@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(50) NULL, MODIFY status VARCHAR(50) NOT NULL DEFAULT 'active'");
+
         Schema::table('users', function (Blueprint $table) {
             $table->index(['status', 'user_type'], 'users_status_user_type_idx');
             $table->index(['driver_status', 'status'], 'users_driver_status_status_idx');
@@ -33,6 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(255) NULL, MODIFY status VARCHAR(255) NOT NULL DEFAULT 'active'");
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropIndex('users_status_user_type_idx');
             $table->dropIndex('users_driver_status_status_idx');

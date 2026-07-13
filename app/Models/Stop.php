@@ -9,7 +9,12 @@ class Stop extends Model
 {
     use HasFactory;
 
-        protected $fillable = ['name', 'description', 'latitude', 'longitude'];
+    protected $fillable = ['name', 'description', 'latitude', 'longitude'];
+
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
 
     public function routeStops()
     {

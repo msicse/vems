@@ -10,8 +10,8 @@ interface Stop {
     id: number;
     name: string;
     description: string | null;
-    latitude: number | null;
-    longitude: number | null;
+    latitude: number | string | null;
+    longitude: number | string | null;
 }
 
 interface EnhancedStopSelectProps {
@@ -54,17 +54,32 @@ export function EnhancedStopSelect({
 
     const noResults = searchTerm && filteredStops.length === 0;
 
-    // Calculate distance from previous stop
-    const getDistanceFromPrevious = (stop: Stop): number | null => {
-        if (!previousStop || !previousStop.latitude || !previousStop.longitude ||
-            !stop.latitude || !stop.longitude) {
+    const normalizeCoordinate = (coordinate: number | string | null): number | null => {
+        if (coordinate === null || coordinate === '') {
             return null;
         }
+
+        const parsed = typeof coordinate === 'number' ? coordinate : Number(coordinate);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    // Calculate distance from previous stop
+    const getDistanceFromPrevious = (stop: Stop): number | null => {
+        const previousLatitude = previousStop ? normalizeCoordinate(previousStop.latitude) : null;
+        const previousLongitude = previousStop ? normalizeCoordinate(previousStop.longitude) : null;
+        const currentLatitude = normalizeCoordinate(stop.latitude);
+        const currentLongitude = normalizeCoordinate(stop.longitude);
+
+        if (previousLatitude === null || previousLongitude === null ||
+            currentLatitude === null || currentLongitude === null) {
+            return null;
+        }
+
         return calculateDistance(
-            previousStop.latitude,
-            previousStop.longitude,
-            stop.latitude,
-            stop.longitude
+            previousLatitude,
+            previousLongitude,
+            currentLatitude,
+            currentLongitude
         );
     };
 
@@ -212,6 +227,8 @@ export function EnhancedStopSelect({
                                     <div className="py-1">
                                         {filteredStops.map((stop) => {
                                             const distance = showDistances && previousStop ? getDistanceFromPrevious(stop) : null;
+                                            const latitude = normalizeCoordinate(stop.latitude);
+                                            const longitude = normalizeCoordinate(stop.longitude);
 
                                             return (
                                                 <button
@@ -236,9 +253,9 @@ export function EnhancedStopSelect({
                                                                 {distance} km from previous
                                                             </div>
                                                         )}
-                                                        {stop.latitude && stop.longitude && (
+                                                        {latitude !== null && longitude !== null && (
                                                             <div className="text-xs text-muted-foreground">
-                                                                {stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}
+                                                                {latitude.toFixed(4)}, {longitude.toFixed(4)}
                                                             </div>
                                                         )}
                                                     </div>

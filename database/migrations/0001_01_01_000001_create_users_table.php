@@ -37,11 +37,11 @@ return new class extends Migration {
             $table->date('license_expiry_date')->nullable();
 
             // User Classification
-            $table->string('user_type')->nullable(); // employee, driver, transport_manager, admin
+            $table->string('user_type', 50)->nullable(); // employee, driver, transport_manager, admin
             $table->foreignId('department_id')->nullable()->constrained()->onDelete('set null');
             $table->string('blood_group')->nullable();
             $table->string('image')->nullable(); // Profile photo
-            $table->string('status')->default('active');
+            $table->string('status', 50)->default('active');
 
             // Employment Details
             $table->date('joining_date')->nullable();

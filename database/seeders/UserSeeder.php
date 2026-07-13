@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
                 'status' => 'active',
                 'blood_group' => 'O+',
                 'password' => Hash::make('password'),
-            ]
+            ],
         );
 
         // Create Transport Manager
