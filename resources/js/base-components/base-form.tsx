@@ -743,6 +743,7 @@ interface FormFileUploadProps {
   description?: string
   maxSize?: number // in bytes
   className?: string
+  compact?: boolean
 }
 
 export function FormFileUpload({
@@ -756,7 +757,8 @@ export function FormFileUpload({
   disabled = false,
   description,
   maxSize,
-  className
+  className,
+  compact = false
 }: FormFileUploadProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = React.useState(false)
@@ -819,7 +821,8 @@ export function FormFileUpload({
 
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-lg p-6 transition-colors",
+          "relative border-2 border-dashed rounded-lg transition-colors",
+          compact ? "p-3" : "p-6",
           dragActive ? "border-primary bg-primary/5" : "border-border",
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/50",
           error && "border-destructive"
@@ -863,6 +866,16 @@ export function FormFileUpload({
             >
               <X className="h-4 w-4" />
             </Button>
+          </div>
+        ) : compact ? (
+          <div className="flex items-center gap-2">
+            <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">Click to upload or drag and drop</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {[accept, maxSize ? `max ${formatFileSize(maxSize)}` : undefined].filter(Boolean).join(' · ')}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="text-center">

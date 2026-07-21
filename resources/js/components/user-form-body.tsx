@@ -126,7 +126,7 @@ export function UserFormBody({
 
     return (
         <BaseForm onSubmit={handleSubmit} processing={processing}>
-            {/* Compact Main Form Card */}
+            {/* Basic Information */}
             <Card className="shadow-sm">
                 <CardHeader className="pb-3 px-4 sm:px-6">
                     <div className="flex items-center justify-between">
@@ -154,9 +154,8 @@ export function UserFormBody({
                     </div>
                 </CardHeader>
 
-                <CardContent className="space-y-5 px-4 sm:px-6">
-                    {/* Compact 3-Column Grid */}
-                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                <CardContent className="space-y-4 px-4 sm:px-6">
+                    <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                         <FormField
                             label="Full Name"
                             name="name"
@@ -188,7 +187,7 @@ export function UserFormBody({
                         />
                     </div>
 
-                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                    <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                         <FormField
                             label="Email Address"
                             name="email"
@@ -237,10 +236,117 @@ export function UserFormBody({
                         )}
                     </div>
 
+                    {/* User Type Preview - Compact */}
+                    {data.user_type && (
+                        <div className="p-3 rounded-md bg-muted/30 border-l-2 border-primary">
+                            <div className="flex items-center gap-2 text-sm">
+                                {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.icon}
+                                <span className="font-medium">
+                                    {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.label}
+                                </span>
+                                <span className="text-muted-foreground">-</span>
+                                <span className="text-muted-foreground text-xs">
+                                    {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.description}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Driver Information (conditional) - placed right after Basic Info since it's the required, driver-specific data */}
+            {showDriverFields && (
+                <Card className="shadow-sm">
+                    <CardHeader className="pb-3 px-4 sm:px-6">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-green-100 rounded-md">
+                                <Car className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg">Driver Information</CardTitle>
+                                <CardDescription className="text-sm">License details and driver-specific information</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4 px-4 sm:px-6">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                            <FormSelect
+                                label="Vendor"
+                                name="vendor_id"
+                                value={data.vendor_id}
+                                onChange={(value) => handleFieldChange('vendor_id', value)}
+                                error={getFieldError('vendor_id')}
+                                options={vendorOptions}
+                                placeholder="Select vendor..."
+                                required={showDriverFields}
+                            />
+
+                            <FormField
+                                label="Driving License Number"
+                                name="driving_license_no"
+                                value={data.driving_license_no}
+                                onChange={(value) => handleFieldChange('driving_license_no', value)}
+                                error={getFieldError('driving_license_no')}
+                                placeholder="Enter license number"
+                                required={showDriverFields}
+                            />
+
+                            <FormSelect
+                                label="License Class"
+                                name="license_class"
+                                value={data.license_class}
+                                onChange={(value) => handleFieldChange('license_class', value)}
+                                error={getFieldError('license_class')}
+                                options={licenseClasses}
+                                placeholder="Select license class..."
+                                required={showDriverFields}
+                            />
+                        </div>
+
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                            <FormDatePicker
+                                label="License Issue Date"
+                                name="license_issue_date"
+                                value={data.license_issue_date}
+                                onChange={(value) => handleFieldChange('license_issue_date', value)}
+                                error={getFieldError('license_issue_date')}
+                            />
+
+                            <FormDatePicker
+                                label="License Expiry Date"
+                                name="license_expiry_date"
+                                value={data.license_expiry_date}
+                                onChange={(value) => handleFieldChange('license_expiry_date', value)}
+                                error={getFieldError('license_expiry_date')}
+                                required={showDriverFields}
+                            />
+
+                            <FormSelect
+                                label="Driver Status"
+                                name="driver_status"
+                                value={data.driver_status}
+                                onChange={(value) => handleFieldChange('driver_status', value)}
+                                error={getFieldError('driver_status')}
+                                options={driverStatusOptions}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Additional Details */}
+            <Card className="shadow-sm">
+                <CardHeader className="pb-3 px-4 sm:px-6">
+                    <CardTitle className="text-lg">Additional Details</CardTitle>
+                    <CardDescription className="text-sm">Contact, identity, and personal information</CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-4 px-4 sm:px-6">
                     {/* Contact Information */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                             <FormField
                                 label="Official Phone"
                                 name="official_phone"
@@ -273,7 +379,7 @@ export function UserFormBody({
                     {/* Identity Documents */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">Identity Documents</h4>
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2">
                             <FormField
                                 label="National ID Number"
                                 name="nid_number"
@@ -297,7 +403,7 @@ export function UserFormBody({
                     {/* Personal Information */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">Personal Information</h4>
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                             <FormSelect
                                 label="Blood Group"
                                 name="blood_group"
@@ -331,7 +437,7 @@ export function UserFormBody({
                     {/* Emergency Contact */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">Emergency Contact</h4>
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                             <FormField
                                 label="Contact Name"
                                 name="emergency_contact_name"
@@ -364,7 +470,7 @@ export function UserFormBody({
                     {/* Addresses - Compact Layout */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground">Address Information</h4>
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 md:grid-cols-3">
                             <FormField
                                 label="Area/Location"
                                 name="area"
@@ -374,130 +480,29 @@ export function UserFormBody({
                                 placeholder="e.g., Gulshan, Mohakhali, Banani"
                             />
 
-                            <div className="md:col-span-2 grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-                                <FormTextarea
-                                    label="Present Address"
-                                    name="present_address"
-                                    value={data.present_address}
-                                    onChange={(value) => handleFieldChange('present_address', value)}
-                                    error={getFieldError('present_address')}
-                                    placeholder="Enter current address"
-                                    rows={2}
-                                />
+                            <FormTextarea
+                                label="Present Address"
+                                name="present_address"
+                                value={data.present_address}
+                                onChange={(value) => handleFieldChange('present_address', value)}
+                                error={getFieldError('present_address')}
+                                placeholder="Enter current address"
+                                rows={2}
+                            />
 
-                                <FormTextarea
-                                    label="Permanent Address"
-                                    name="permanent_address"
-                                    value={data.permanent_address}
-                                    onChange={(value) => handleFieldChange('permanent_address', value)}
-                                    error={getFieldError('permanent_address')}
-                                    placeholder="Enter permanent address"
-                                    rows={2}
-                                />
-                            </div>
+                            <FormTextarea
+                                label="Permanent Address"
+                                name="permanent_address"
+                                value={data.permanent_address}
+                                onChange={(value) => handleFieldChange('permanent_address', value)}
+                                error={getFieldError('permanent_address')}
+                                placeholder="Enter permanent address"
+                                rows={2}
+                            />
                         </div>
                     </div>
-
-                    {/* User Type Preview - Compact */}
-                    {data.user_type && (
-                        <div className="p-3 rounded-md bg-muted/30 border-l-2 border-primary">
-                            <div className="flex items-center gap-2 text-sm">
-                                {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.icon}
-                                <span className="font-medium">
-                                    {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.label}
-                                </span>
-                                <span className="text-muted-foreground">-</span>
-                                <span className="text-muted-foreground text-xs">
-                                    {enhancedUserTypeOptions.find((opt) => opt.value === data.user_type)?.description}
-                                </span>
-                            </div>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
-
-            {/* Driver Information Card (conditional) - Compact */}
-            {showDriverFields && (
-                <Card className="shadow-sm">
-                    <CardHeader className="pb-3 px-4 sm:px-6">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-green-100 rounded-md">
-                                <Car className="h-4 w-4 text-green-600" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Driver Information</CardTitle>
-                                <CardDescription className="text-sm">License details and driver-specific information</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4 px-4 sm:px-6">
-                                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-                                        <FormSelect
-                                            label="Vendor"
-                                            name="vendor_id"
-                                            value={data.vendor_id}
-                                            onChange={(value) => handleFieldChange('vendor_id', value)}
-                                            error={getFieldError('vendor_id')}
-                                            options={vendorOptions}
-                                            placeholder="Select vendor..."
-                                            required={showDriverFields}
-                                        />
-                                    </div>
-
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-                            <FormField
-                                label="Driving License Number"
-                                name="driving_license_no"
-                                value={data.driving_license_no}
-                                onChange={(value) => handleFieldChange('driving_license_no', value)}
-                                error={getFieldError('driving_license_no')}
-                                placeholder="Enter license number"
-                                required={showDriverFields}
-                            />
-
-                            <FormSelect
-                                label="License Class"
-                                name="license_class"
-                                value={data.license_class}
-                                onChange={(value) => handleFieldChange('license_class', value)}
-                                error={getFieldError('license_class')}
-                                options={licenseClasses}
-                                placeholder="Select license class..."
-                                required={showDriverFields}
-                            />
-                        </div>
-
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-                            <FormDatePicker
-                                label="License Issue Date"
-                                name="license_issue_date"
-                                value={data.license_issue_date}
-                                onChange={(value) => handleFieldChange('license_issue_date', value)}
-                                error={getFieldError('license_issue_date')}
-                            />
-
-                            <FormDatePicker
-                                label="License Expiry Date"
-                                name="license_expiry_date"
-                                value={data.license_expiry_date}
-                                onChange={(value) => handleFieldChange('license_expiry_date', value)}
-                                error={getFieldError('license_expiry_date')}
-                                required={showDriverFields}
-                            />
-
-                            <FormSelect
-                                label="Driver Status"
-                                name="driver_status"
-                                value={data.driver_status}
-                                onChange={(value) => handleFieldChange('driver_status', value)}
-                                error={getFieldError('driver_status')}
-                                options={driverStatusOptions}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* File Uploads & Security - Compact */}
             <Card className="shadow-sm">
@@ -508,7 +513,7 @@ export function UserFormBody({
 
                 <CardContent className="space-y-4 px-4 sm:px-6">
                     {/* File Uploads - Compact */}
-                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                    <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 md:grid-cols-2">
                         <FormFileUpload
                             label="Profile Image"
                             name="image"
@@ -516,6 +521,7 @@ export function UserFormBody({
                             error={getFieldError('image')}
                             accept="image/*"
                             maxSize={2}
+                            compact
                         />
 
                         <FormFileUpload
@@ -525,12 +531,13 @@ export function UserFormBody({
                             error={getFieldError('photo')}
                             accept="image/*"
                             maxSize={2}
+                            compact
                         />
                     </div>
 
                     {/* Password Section - Compact */}
                     <div className="border-t pt-4">
-                        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                        <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 md:grid-cols-2">
                             <FormField
                                 label="Password"
                                 name="password"
