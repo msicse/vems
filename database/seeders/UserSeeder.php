@@ -37,6 +37,110 @@ class UserSeeder extends Seeder
             ],
         );
 
+
+        $users = [
+            [
+                'name' => 'Tawseq Siraj Chowdhury',
+                'username' => 'tawseq.siraj',
+                'employee_id' => '302',
+                'email' => 'tawseq.siraj@rsc-bd.org',
+                'department_id' => 3, // Administration department
+                'official_phone' => '+8801713369165',
+                'personal_phone' => '+8801713369165',
+                'emergency_phone' => '+8801713369165',
+                'emergency_contact_name' => 'Tawseq Emergency Contact',
+                'emergency_contact_relation' => 'Family',
+                'present_address' => 'Tawseq Residence, Dhaka',
+                'permanent_address' => 'Tawseq Permanent Address, Dhaka',
+                'joining_date' => '2020-01-01',
+                'status' => 'active',
+                'blood_group' => 'O+',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Lawrence Corraya',
+                'username' => 'lawrence.corraya',
+                'employee_id' => '003',
+                'email' => 'lawrence.corraya@rsc-bd.org',
+                'department_id' => 3, // Administration department
+                'official_phone' => '+8801766695905',
+                'personal_phone' => '+8801766695905',
+                'emergency_phone' => '+8801766695905',
+                'emergency_contact_name' => 'Lawrence Emergency Contact',
+                'emergency_contact_relation' => 'Family',
+                'present_address' => 'Lawrence Residence, Dhaka',
+                'permanent_address' => 'Lawrence Permanent Address, Dhaka',
+                'joining_date' => '2020-01-01',
+                'status' => 'active',
+                'blood_group' => 'O+',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Md. Al-Hasan Sarker',
+                'username' => 'hasan.sarker',
+                'employee_id' => '281',
+                'email' => 'hasan.sarker@rsc-bd.org',
+                'department_id' => 3, // Administration department
+                'official_phone' => '+8801700710172',
+                'personal_phone' => '+8801700710172',
+                'emergency_phone' => '+8801700710172',
+                'emergency_contact_name' => 'Md. Al-Hasan Emergency Contact',
+                'emergency_contact_relation' => 'Family',
+                'present_address' => 'Md. Al-Hasan Residence, Dhaka',
+                'permanent_address' => 'Md. Al-Hasan Permanent Address, Dhaka',
+                'joining_date' => '2020-01-01',
+                'status' => 'active',
+                'blood_group' => 'O+',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Khadiza Rahman',
+                'username' => 'khadiza.rahman',
+                'employee_id' => '053',
+                'email' => 'khadiza.rahman@rsc-bd.org',
+                'department_id' => 3, // Administration department
+                'official_phone' => '+8801766695906',
+                'personal_phone' => '+8801766695906',
+                'emergency_phone' => '+8801766695906',
+                'emergency_contact_name' => 'Khadiza Emergency Contact',
+                'emergency_contact_relation' => 'Family',
+                'present_address' => 'Khadiza Residence, Dhaka',
+                'permanent_address' => 'Khadiza Permanent Address, Dhaka',
+                'joining_date' => '2020-01-01',
+                'status' => 'active',
+                'blood_group' => 'O+',
+                'password' => Hash::make('password'),
+            ],
+        ];
+
+
+        //Create other users
+        foreach ($users as $userData) {
+            User::updateOrCreate(
+                ['email' => $userData['email']],
+                [
+                    'name' => $userData['name'],
+                    'username' => $userData['username'],
+                    'employee_id' => $userData['employee_id'],
+                    'user_type' => 'employee',
+                    'department_id' => $userData['department_id'],
+                    'official_phone' => $userData['official_phone'],
+                    'personal_phone' => $userData['personal_phone'],
+                    'emergency_phone' => $userData['emergency_phone'],
+                    'emergency_contact_name' => $userData['emergency_contact_name'],
+                    'emergency_contact_relation' => $userData['emergency_contact_relation'],
+                    'present_address' => $userData['present_address'],
+                    'permanent_address' => $userData['permanent_address'],
+                    'joining_date' => $userData['joining_date'],
+                    'status' => $userData['status'],
+                    'blood_group' => $userData['blood_group'],
+                    'password' => $userData['password'],
+                ]
+            );
+        }
+
+
+
         // Create Transport Manager
         $transportManager = User::updateOrCreate(
             ['email' => 'transport.manager@vems.com'],
@@ -252,6 +356,7 @@ class UserSeeder extends Seeder
             if (Role::where('name', 'transport-manager')->exists()) {
                 $transportManager->assignRole('transport-manager');
             }
+            
 
             if (Role::where('name', 'driver')->exists()) {
                 $drivers = User::where('user_type', 'driver')->get();

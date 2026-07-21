@@ -8,13 +8,14 @@ import { UserForm, UserFormBody } from '@/components/user-form-body';
 
 interface CreateUserProps {
   departments: Array<{ id: number; name: string }>;
+  vendors: Array<{ id: number; name: string }>;
   roles: Array<{ id: number; name: string }>;
   userTypes: Array<{ value: string; label: string }>;
   licenseClasses: Array<{ value: string; label: string }>;
   bloodGroups: Array<{ value: string; label: string }>;
 }
 
-export default function CreateUser({ departments, roles, userTypes, licenseClasses, bloodGroups }: CreateUserProps) {
+export default function CreateUser({ departments, vendors, roles, userTypes, licenseClasses, bloodGroups }: CreateUserProps) {
   const { data, setData, post, processing, errors: serverErrors, reset } = useForm<UserForm>({
     name: '',
     username: '',
@@ -22,6 +23,7 @@ export default function CreateUser({ departments, roles, userTypes, licenseClass
     email: '',
     user_type: 'employee',
     department_id: '',
+    vendor_id: '',
     roles: [],
     official_phone: '',
     personal_phone: '',
@@ -100,6 +102,7 @@ export default function CreateUser({ departments, roles, userTypes, licenseClass
     driving_license_no: showDriverFields ? [commonValidationRules.required('Driving license number is required for drivers')] : [],
     license_class: showDriverFields ? [commonValidationRules.required('License class is required for drivers')] : [],
     license_expiry_date: showDriverFields ? [commonValidationRules.required('License expiry date is required for drivers')] : [],
+    vendor_id: showDriverFields ? [commonValidationRules.required('Vendor is required for drivers')] : [],
   };
 
   const { errors: clientErrors, validate, clearError, hasErrors } = useFormValidation(validationRules);
@@ -151,6 +154,7 @@ export default function CreateUser({ departments, roles, userTypes, licenseClass
   const formCompletion = getFormCompletion();
 
   const departmentOptions = departments.map((dept) => ({ label: dept.name, value: dept.id.toString() }));
+  const vendorOptions = vendors.map((vendor) => ({ label: vendor.name, value: vendor.id.toString() }));
   const statusOptions = [
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' },
@@ -206,6 +210,7 @@ export default function CreateUser({ departments, roles, userTypes, licenseClass
             onReset={() => reset()}
             roles={roles}
             userTypes={userTypes}
+            vendorOptions={vendorOptions}
             licenseClasses={licenseClasses}
             bloodGroups={bloodGroups}
             departmentOptions={departmentOptions}

@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(50) NULL, MODIFY status VARCHAR(50) NOT NULL DEFAULT 'active'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(50) NULL, MODIFY status VARCHAR(50) NOT NULL DEFAULT 'active'");
+        }
 
         Schema::table('users', function (Blueprint $table) {
             $table->index(['status', 'user_type'], 'users_status_user_type_idx');
@@ -36,8 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(255) NULL, MODIFY status VARCHAR(255) NOT NULL DEFAULT 'active'");
-
         Schema::table('users', function (Blueprint $table) {
             $table->dropIndex('users_status_user_type_idx');
             $table->dropIndex('users_driver_status_status_idx');
@@ -53,5 +53,9 @@ return new class extends Migration
             $table->dropIndex('trips_status_vehicle_date_idx');
             $table->dropIndex('trips_status_department_date_idx');
         });
+
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE users MODIFY user_type VARCHAR(255) NULL, MODIFY status VARCHAR(255) NOT NULL DEFAULT 'active'");
+        }
     }
 };

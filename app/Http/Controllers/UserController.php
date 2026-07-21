@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Department;
+use App\Models\Vendor;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserIndexRequest;
@@ -184,6 +185,7 @@ class UserController extends Controller implements HasMiddleware
     public function create(): Response
     {
         $departments = Department::active()->get(['id', 'name']);
+        $vendors = Vendor::active()->get(['id', 'name']);
         $roles = Role::all(['id', 'name']);
 
         $userTypes = [
@@ -211,6 +213,7 @@ class UserController extends Controller implements HasMiddleware
 
         return Inertia::render('users/create', [
             'departments' => $departments,
+            'vendors' => $vendors,
             'roles' => $roles,
             'userTypes' => $userTypes,
             'licenseClasses' => $licenseClasses,
@@ -286,6 +289,7 @@ class UserController extends Controller implements HasMiddleware
     public function edit(User $user): Response
     {
         $departments = Department::active()->get(['id', 'name']);
+        $vendors = Vendor::active()->get(['id', 'name']);
         $roles = Role::all(['id', 'name']);
         $userRoles = $user->roles->pluck('id')->map(function($id) {
             return (string) $id;
@@ -331,6 +335,7 @@ class UserController extends Controller implements HasMiddleware
         return Inertia::render('users/edit', [
             'user' => $user,
             'departments' => $departments,
+            'vendors' => $vendors,
             'roles' => $roles,
             'userRoles' => $userRoles,
             'userTypes' => $userTypes,

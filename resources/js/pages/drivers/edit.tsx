@@ -2,7 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Users, CheckCircle, User, Car, Shield } from 'lucide-react';
+import { ArrowLeft, Save, Users, CheckCircle, Car } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { PageHeader } from '@/base-components/page-header';
 import {
@@ -11,8 +11,7 @@ import {
   FormSelect,
   FormTextarea,
   FormFileUpload,
-  FormDatePicker,
-  FormMultiSelect
+  FormDatePicker
 } from '@/base-components/base-form';
 
 /**
@@ -35,6 +34,7 @@ type UserForm = {
   email: string;
   user_type: string;
   department_id: string;
+  vendor_id: string;
   roles: string[];
   official_phone: string;
   personal_phone: string;
@@ -64,6 +64,7 @@ type UserForm = {
 interface EditUserProps {
   user: Record<string, unknown>; // User data from the backend
   departments: Array<{ id: number; name: string }>;
+  vendors: Array<{ id: number; name: string }>;
   roles: Array<{ id: number; name: string }>;
   userRoles: string[]; // Current user roles
   userTypes: Array<{ value: string; label: string }>;
@@ -108,14 +109,15 @@ const enhancedUserTypeOptions = [
   }
 ];
 
-export default function EditUser({ user, departments, roles, userRoles, userTypes, licenseClasses, bloodGroups }: EditUserProps) {
+export default function EditUser({ user, departments, vendors, roles, userRoles, userTypes, licenseClasses, bloodGroups }: EditUserProps) {
   const { data, setData, put, processing, errors, reset } = useForm<UserForm>({
     name: (user.name as string) || '',
     username: (user.username as string) || '',
     employee_id: (user.employee_id as string) || '',
     email: (user.email as string) || '',
-    user_type: (user.user_type as string) || '',
+    user_type: 'driver',
     department_id: (user.department_id as number)?.toString() || '',
+    vendor_id: (user.vendor_id as number)?.toString() || '',
     roles: userRoles || [],
     official_phone: (user.official_phone as string) || '',
     personal_phone: (user.personal_phone as string) || '',
@@ -143,12 +145,17 @@ export default function EditUser({ user, departments, roles, userRoles, userType
   });
 
   // Show driver fields if user type is driver
-  const showDriverFields = data.user_type === 'driver';
+  const showDriverFields = true;
 
   // Convert departments to options format
   const departmentOptions = departments.map(dept => ({
     label: dept.name,
     value: dept.id.toString()
+  }));
+
+  const vendorOptions = vendors.map(vendor => ({
+    label: vendor.name,
+    value: vendor.id.toString()
   }));
 
   // Status options
@@ -482,6 +489,17 @@ export default function EditUser({ user, departments, roles, userRoles, userType
 
                 <CardContent className="space-y-4 px-4 sm:px-6">
                   <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                    <FormSelect
+                      label="Vendor"
+                      name="vendor_id"
+                      value={data.vendor_id}
+                      onChange={(value) => handleFieldChange('vendor_id', value)}
+                      error={errors.vendor_id}
+                      options={vendorOptions}
+                      placeholder="Select vendor..."
+                      required
+                    />
+
                     <FormField
                       label="Driving License Number"
                       name="driving_license_no"

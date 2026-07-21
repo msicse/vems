@@ -39,6 +39,7 @@ class User extends Authenticatable
         'license_expiry_date',
         'user_type',
         'department_id',
+        'vendor_id',
         'blood_group',
         'image',
         'status',
@@ -113,6 +114,11 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
     }
 
     public function assignedVehicles(): HasMany

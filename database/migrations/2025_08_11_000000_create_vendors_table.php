@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->text('description')->nullable();
+            $table->enum('location', ['dhaka', 'chittagong'])->default('dhaka');
 
             // Document fields
             $table->string('trade_license')->nullable();
@@ -31,7 +32,7 @@ return new class extends Migration
             $table->string('tax_return_file')->nullable();
             $table->text('bank_details')->nullable();
 
-            $table->string('status')->default('active');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }

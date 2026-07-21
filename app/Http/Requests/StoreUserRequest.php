@@ -46,6 +46,11 @@ class StoreUserRequest extends FormRequest
             // User Classification
             'user_type' => ['nullable', 'string', 'in:employee,driver,transport_manager,admin'],
             'department_id' => ['nullable', 'exists:departments,id'],
+            'vendor_id' => [
+                'nullable',
+                'exists:vendors,id',
+                Rule::requiredIf(fn () => $this->input('user_type') === 'driver' || $this->routeIs('drivers.store')),
+            ],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,id'],
             'blood_group' => ['nullable', 'string', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
@@ -91,6 +96,8 @@ class StoreUserRequest extends FormRequest
             'roles.required' => 'At least one role must be selected.',
             'roles.min' => 'At least one role must be selected.',
             'roles.*.exists' => 'One or more selected roles are invalid.',
+            'vendor_id.required' => 'Vendor is required for driver users.',
+            'vendor_id.exists' => 'The selected vendor is invalid.',
         ];
     }
 

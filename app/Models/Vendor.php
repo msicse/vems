@@ -49,6 +49,14 @@ class Vendor extends Model
     }
 
     /**
+     * Get users (e.g. drivers) associated with this vendor
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
      * Scope to get active vendors
      */
     public function scopeActive($query)

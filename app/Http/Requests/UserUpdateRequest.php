@@ -37,6 +37,7 @@ class UserUpdateRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:500'],
             'whatsapp_id' => ['nullable', 'string', 'max:20'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             // Driver-specific fields
             'driving_license_no' => ['nullable', 'string', 'max:50'],
             'nid_number' => ['nullable', 'string', 'max:50'],
@@ -53,6 +54,7 @@ class UserUpdateRequest extends FormRequest
             $rules['username'] = ['required', 'string', 'max:255', Rule::unique('users')->ignore($userId)];
             $rules['email'] = ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($userId)];
             // Required fields for drivers
+            $rules['vendor_id'] = ['required', 'integer', 'exists:vendors,id'];
             $rules['driving_license_no'] = ['required', 'string', 'max:50', Rule::unique('users')->ignore($userId)];
             $rules['nid_number'] = ['required', 'string', 'max:50', Rule::unique('users')->ignore($userId)];
             $rules['official_phone'] = ['required', 'string', 'max:20'];

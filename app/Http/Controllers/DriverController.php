@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Department;
+use App\Models\Vendor;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserIndexRequest;
@@ -190,6 +191,7 @@ class DriverController extends Controller implements HasMiddleware
     public function create(): Response
     {
         $departments = Department::active()->get(['id', 'name']);
+        $vendors = Vendor::active()->get(['id', 'name']);
         $roles = Role::all(['id', 'name']);
 
         // Get default department (first active department)
@@ -224,6 +226,7 @@ class DriverController extends Controller implements HasMiddleware
 
         return Inertia::render('drivers/create', [
             'departments' => $departments,
+            'vendors' => $vendors,
             'roles' => $roles,
             'userTypes' => $userTypes,
             'licenseClasses' => $licenseClasses,
@@ -244,15 +247,8 @@ class DriverController extends Controller implements HasMiddleware
     {
         $validated = $request->validated();
 
-        // Auto-set user_type to driver if not provided
-        if (empty($validated['user_type'])) {
-            $validated['user_type'] = 'driver';
-        }
-
-        // Ensure user_type is driver or transport_manager
-        if (!in_array($validated['user_type'], ['driver', 'transport_manager'])) {
-            return redirect()->back()->withErrors(['user_type' => 'Only driver or transport manager can be created here.']);
-        }
+        // Driver module is fixed to driver user type
+        $validated['user_type'] = 'driver';
 
         // Handle file uploads
         if ($request->hasFile('image')) {
@@ -286,20 +282,10 @@ class DriverController extends Controller implements HasMiddleware
 
         $user = User::create($validated);
 
-        // Assign default Driver role if no roles provided
-        if (empty($validated['roles'])) {
-            $driverRole = Role::where('name', 'Driver')->first();
-            if ($driverRole) {
-                $user->syncRoles([$driverRole->id]);
-            }
-        } else {
-            $roleIds = collect($validated['roles'])
-                ->map(static fn ($roleId) => (int) $roleId)
-                ->filter(static fn (int $roleId) => $roleId > 0)
-                ->values();
-
-            $roles = Role::whereIn('id', $roleIds)->get();
-            $user->syncRoles($roles);
+        // Driver module is fixed to Driver role
+        $driverRole = Role::whereRaw('LOWER(name) = ?', ['driver'])->first();
+        if ($driverRole) {
+            $user->syncRoles([$driverRole->id]);
         }
 
         return redirect()->route('drivers.index')->with('success', $generatedPassword
@@ -345,6 +331,7 @@ class DriverController extends Controller implements HasMiddleware
         }
 
         $departments = Department::active()->get(['id', 'name']);
+        $vendors = Vendor::active()->get(['id', 'name']);
         $roles = Role::all(['id', 'name']);
         $userRoles = $driver->roles->pluck('id')->map(fn($id) => (string) $id)->toArray();
 
@@ -375,6 +362,7 @@ class DriverController extends Controller implements HasMiddleware
         return Inertia::render('drivers/edit', [
             'user' => $driver,
             'departments' => $departments,
+            'vendors' => $vendors,
             'roles' => $roles,
             'userRoles' => $userRoles,
             'userTypes' => $userTypes,
@@ -394,10 +382,8 @@ class DriverController extends Controller implements HasMiddleware
 
         $validated = $request->validated();
 
-        // Ensure user_type remains driver or transport_manager
-        if (isset($validated['user_type']) && !in_array($validated['user_type'], ['driver', 'transport_manager'])) {
-            return redirect()->back()->withErrors(['user_type' => 'User type must be driver or transport manager.']);
-        }
+        // Driver module is fixed to driver user type
+        $validated['user_type'] = 'driver';
 
         // Handle file uploads
         if ($request->hasFile('image')) {
@@ -423,23 +409,10 @@ class DriverController extends Controller implements HasMiddleware
 
         $driver->update($validated);
 
-        // Sync roles - maintain existing roles if not provided
-        if (isset($validated['roles']) && !empty($validated['roles'])) {
-            $roleIds = collect($validated['roles'])
-                ->map(static fn ($roleId) => (int) $roleId)
-                ->filter(static fn (int $roleId) => $roleId > 0)
-                ->values();
-
-            $roles = Role::whereIn('id', $roleIds)->get();
-            $driver->syncRoles($roles);
-        } elseif (!isset($validated['roles']) || empty($validated['roles'])) {
-            // If no roles provided, ensure driver has at least the Driver role
-            if ($driver->roles->isEmpty()) {
-                $driverRole = Role::where('name', 'Driver')->first();
-                if ($driverRole) {
-                    $driver->syncRoles([$driverRole->id]);
-                }
-            }
+        // Driver module is fixed to Driver role
+        $driverRole = Role::whereRaw('LOWER(name) = ?', ['driver'])->first();
+        if ($driverRole) {
+            $driver->syncRoles([$driverRole->id]);
         }
 
         return redirect()->route('drivers.index')->with('success', 'Driver updated successfully.');

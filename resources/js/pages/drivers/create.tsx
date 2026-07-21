@@ -8,6 +8,7 @@ import { UserForm, UserFormBody } from '@/components/user-form-body';
 
 interface CreateDriverProps {
   departments: Array<{ id: number; name: string }>;
+  vendors: Array<{ id: number; name: string }>;
   roles: Array<{ id: number; name: string }>;
   userTypes: Array<{ value: string; label: string }>;
   licenseClasses: Array<{ value: string; label: string }>;
@@ -20,7 +21,7 @@ interface CreateDriverProps {
   };
 }
 
-export default function CreateDriver({ departments, roles, userTypes, licenseClasses, bloodGroups, defaults }: CreateDriverProps) {
+export default function CreateDriver({ departments, vendors, roles, userTypes, licenseClasses, bloodGroups, defaults }: CreateDriverProps) {
   const { data, setData, post, processing, errors: serverErrors, reset } = useForm<UserForm>({
     name: '',
     username: '',
@@ -28,6 +29,7 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
     email: '',
     user_type: defaults.user_type || 'driver',
     department_id: defaults.department_id?.toString() || '',
+    vendor_id: '',
     roles: defaults.role_id ? [defaults.role_id.toString()] : [],
     official_phone: '',
     personal_phone: '',
@@ -68,16 +70,6 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
       commonValidationRules.maxLength(50, 'Username must be less than 50 characters'),
     ],
     email: [commonValidationRules.email('Please enter a valid email address')],
-    user_type: [
-      commonValidationRules.required('User type is required'),
-      commonValidationRules.oneOf(['employee', 'driver', 'transport_manager', 'admin'], 'Invalid user type selected'),
-    ],
-    roles: [
-      (value) => {
-        if (!value || value.length === 0) return 'At least one role is required';
-        return undefined;
-      },
-    ],
     password: [
       commonValidationRules.required('Password is required'),
       commonValidationRules.minLength(8, 'Password must be at least 8 characters'),
@@ -106,6 +98,7 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
     driving_license_no: showDriverFields ? [commonValidationRules.required('Driving license number is required for drivers')] : [],
     license_class: showDriverFields ? [commonValidationRules.required('License class is required for drivers')] : [],
     license_expiry_date: showDriverFields ? [commonValidationRules.required('License expiry date is required for drivers')] : [],
+    vendor_id: showDriverFields ? [commonValidationRules.required('Vendor is required for drivers')] : [],
   };
 
   const { errors: clientErrors, validate, clearError, hasErrors } = useFormValidation(validationRules);
@@ -142,13 +135,12 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
   };
 
   const getFormCompletion = () => {
-    const requiredFields = ['name', 'username', 'user_type', 'roles', 'password', 'password_confirmation'];
+    const requiredFields = ['name', 'username', 'vendor_id', 'password', 'password_confirmation'];
     if (showDriverFields) {
       requiredFields.push('driving_license_no', 'license_class', 'license_expiry_date');
     }
     const completedFields = requiredFields.filter((field) => {
       const value = data[field as keyof UserForm];
-      if (field === 'roles') return Array.isArray(value) && value.length > 0;
       return value && value.toString().trim() !== '';
     });
     return Math.round((completedFields.length / requiredFields.length) * 100);
@@ -157,6 +149,7 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
   const formCompletion = getFormCompletion();
 
   const departmentOptions = departments.map((dept) => ({ label: dept.name, value: dept.id.toString() }));
+  const vendorOptions = vendors.map((vendor) => ({ label: vendor.name, value: vendor.id.toString() }));
   const statusOptions = [
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' },
@@ -212,6 +205,8 @@ export default function CreateDriver({ departments, roles, userTypes, licenseCla
             onReset={() => reset()}
             roles={roles}
             userTypes={userTypes}
+            vendorOptions={vendorOptions}
+            hideUserTypeAndRoles={true}
             licenseClasses={licenseClasses}
             bloodGroups={bloodGroups}
             departmentOptions={departmentOptions}

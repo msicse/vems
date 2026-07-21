@@ -37,7 +37,7 @@ return new class extends Migration
                 'pool',     // Pool/shared vehicle
                 'rental',   // Leased vehicle
                 'adhoc',    // Ad-hoc rental
-                'support',  // Support vehicle
+                'others',  // Support vehicle
             ])->default('pool');
 
             $table->integer('capacity')->nullable();

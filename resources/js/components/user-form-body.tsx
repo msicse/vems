@@ -19,6 +19,7 @@ export type UserForm = {
     email: string;
     user_type: string;
     department_id: string;
+    vendor_id: string;
     roles: string[];
     official_phone: string;
     personal_phone: string;
@@ -87,6 +88,8 @@ interface UserFormBodyProps {
     onReset: () => void;
     roles: Array<{ id: number; name: string }>;
     userTypes: Array<{ value: string; label: string }>;
+    vendorOptions?: Array<{ label: string; value: string }>;
+    hideUserTypeAndRoles?: boolean;
     licenseClasses: Array<{ value: string; label: string }>;
     bloodGroups: Array<{ value: string; label: string }>;
     departmentOptions: Array<{ label: string; value: string }>;
@@ -107,6 +110,8 @@ export function UserFormBody({
     setData,
     roles,
     userTypes,
+    vendorOptions = [],
+    hideUserTypeAndRoles = false,
     licenseClasses,
     bloodGroups,
     departmentOptions,
@@ -194,15 +199,17 @@ export function UserFormBody({
                             placeholder="Enter email address"
                         />
 
-                        <FormSelect
-                            label="User Type"
-                            name="user_type"
-                            value={data.user_type}
-                            onChange={handleUserTypeChange}
-                            error={getFieldError('user_type')}
-                            options={userTypes}
-                            required
-                        />
+                        {!hideUserTypeAndRoles && (
+                            <FormSelect
+                                label="User Type"
+                                name="user_type"
+                                value={data.user_type}
+                                onChange={handleUserTypeChange}
+                                error={getFieldError('user_type')}
+                                options={userTypes}
+                                required
+                            />
+                        )}
 
                         <FormSelect
                             label="Department"
@@ -214,19 +221,20 @@ export function UserFormBody({
                             placeholder="Select department..."
                         />
 
-                        {/* Role Selection */}
-                        <FormMultiSelect
-                            label="Roles"
-                            name="roles"
-                            value={data.roles}
-                            onChange={(values) => setData('roles', values)}
-                            error={getFieldError('roles')}
-                            options={roles.map((role) => ({ value: role.id.toString(), label: role.name }))}
-                            placeholder="Select roles..."
-                            required
-                            searchable
-                            description="Select one or more roles for this user"
-                        />
+                        {!hideUserTypeAndRoles && (
+                            <FormMultiSelect
+                                label="Roles"
+                                name="roles"
+                                value={data.roles}
+                                onChange={(values) => setData('roles', values)}
+                                error={getFieldError('roles')}
+                                options={roles.map((role) => ({ value: role.id.toString(), label: role.name }))}
+                                placeholder="Select roles..."
+                                required
+                                searchable
+                                description="Select one or more roles for this user"
+                            />
+                        )}
                     </div>
 
                     {/* Contact Information */}
@@ -424,6 +432,19 @@ export function UserFormBody({
                     </CardHeader>
 
                     <CardContent className="space-y-4 px-4 sm:px-6">
+                                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+                                        <FormSelect
+                                            label="Vendor"
+                                            name="vendor_id"
+                                            value={data.vendor_id}
+                                            onChange={(value) => handleFieldChange('vendor_id', value)}
+                                            error={getFieldError('vendor_id')}
+                                            options={vendorOptions}
+                                            placeholder="Select vendor..."
+                                            required={showDriverFields}
+                                        />
+                                    </div>
+
                         <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
                             <FormField
                                 label="Driving License Number"
