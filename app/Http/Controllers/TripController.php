@@ -493,6 +493,7 @@ class TripController extends Controller implements HasMiddleware
             'logistics',
             'factories',
             'departments',
+            'feedbackEntries' => fn ($query) => $query->visibleTo(auth()->user())->latest(),
         ]);
 
         $vehicleAssignments = $trip->vehicleAssignments()

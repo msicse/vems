@@ -17,6 +17,8 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\TripPassengerController;
 use App\Http\Controllers\TripStateController;
+use App\Http\Controllers\TripFeedbackController;
+use App\Http\Controllers\TripFeedbackStateController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FactoryController;
@@ -117,6 +119,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/trips/{trip}/passengers/{tripPassenger}/check-out', [TripPassengerController::class, 'checkOut'])->name('trips.passengers.check-out');
     Route::post('/trips/{trip}/passengers/{tripPassenger}/no-show', [TripPassengerController::class, 'markNoShow'])->name('trips.passengers.no-show');
     Route::post('/trips/{trip}/passengers/{tripPassenger}/events/{tripPassengerEvent}/correct', [TripPassengerController::class, 'correctEvent'])->name('trips.passengers.events.correct');
+
+    // Trip feedback & complaints routes
+    Route::resource('complaints', TripFeedbackController::class)->except(['edit', 'update']);
+    Route::post('/complaints/{complaint}/assign', [TripFeedbackStateController::class, 'assign'])->name('complaints.assign');
+    Route::post('/complaints/{complaint}/resolve', [TripFeedbackStateController::class, 'resolve'])->name('complaints.resolve');
+    Route::post('/complaints/{complaint}/close', [TripFeedbackStateController::class, 'close'])->name('complaints.close');
+    Route::post('/complaints/{complaint}/reopen', [TripFeedbackStateController::class, 'reopen'])->name('complaints.reopen');
 
     // Role and Permission management routes
     Route::resource('roles', RoleController::class);

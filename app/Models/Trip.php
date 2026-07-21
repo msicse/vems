@@ -128,6 +128,12 @@ class Trip extends Model
         return $this->hasMany(TripVehicleAssignment::class);
     }
 
+    // Named to avoid colliding with the existing (legacy, unused) `feedback` text column/attribute.
+    public function feedbackEntries(): HasMany
+    {
+        return $this->hasMany(TripFeedback::class);
+    }
+
     /**
      * Current vehicle assignment
      */

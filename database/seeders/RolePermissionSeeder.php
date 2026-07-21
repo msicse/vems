@@ -42,6 +42,14 @@ class RolePermissionSeeder extends Seeder
             'correct-passenger-attendance',
             'view-passenger-events',
 
+            // Trip Feedback & Complaints
+            'view-own-complaints',
+            'view-complaints',
+            'create-complaints',
+            'assign-complaints',
+            'resolve-complaints',
+            'delete-complaints',
+
             // Driver Management
             'view-drivers',
             'create-drivers',
@@ -134,6 +142,9 @@ class RolePermissionSeeder extends Seeder
             'assign-drivers', 'check-in-trips', 'check-out-trips',
             'capture-passenger-attendance', 'correct-passenger-attendance', 'view-passenger-events',
 
+            // Trip Feedback & Complaints
+            'view-complaints', 'create-complaints', 'assign-complaints', 'resolve-complaints', 'delete-complaints',
+
             // Driver Management
             'view-drivers', 'create-drivers', 'edit-drivers', 'manage-driver-documents',
             'view-driver-performance',
@@ -165,6 +176,7 @@ class RolePermissionSeeder extends Seeder
             'view-vehicles', 'edit-vehicles', 'assign-vehicles',
             'view-trips', 'create-trips', 'edit-trips', 'approve-trips', 'assign-drivers',
             'capture-passenger-attendance', 'view-passenger-events',
+            'view-complaints', 'create-complaints', 'assign-complaints', 'resolve-complaints',
             'view-drivers', 'edit-drivers', 'view-driver-performance',
             'view-schedules', 'create-schedules', 'edit-schedules',
             'view-maintenance', 'create-maintenance', 'schedule-maintenance',
@@ -178,6 +190,7 @@ class RolePermissionSeeder extends Seeder
         $departmentHead = Role::firstOrCreate(['name' => 'department-head', 'guard_name' => 'web']);
         $departmentHead->syncPermissions([
             'view-vehicles', 'view-trips', 'create-trips', 'approve-trips',
+            'view-complaints', 'create-complaints',
             'view-drivers', 'view-schedules', 'view-reports',
             'view-notifications', 'manage-department-budget',
         ]);
@@ -189,6 +202,7 @@ class RolePermissionSeeder extends Seeder
             'view-trips', 'create-trips', 'edit-trips', 'assign-drivers',
             'check-in-trips', 'check-out-trips',
             'capture-passenger-attendance', 'view-passenger-events',
+            'create-complaints', 'view-own-complaints',
             'view-drivers', 'edit-drivers',
             'view-schedules', 'create-schedules', 'edit-schedules',
             'view-maintenance', 'create-maintenance',
@@ -203,6 +217,7 @@ class RolePermissionSeeder extends Seeder
         $adminOfficer->syncPermissions([
             'view-vehicles', 'manage-vehicle-documents',
             'view-trips', 'create-trips',
+            'view-complaints', 'create-complaints',
             'view-drivers', 'manage-driver-documents',
             'view-schedules', 'view-maintenance',
             'view-fuel-logs', 'view-reports',
@@ -215,6 +230,7 @@ class RolePermissionSeeder extends Seeder
         $seniorDriver->syncPermissions([
             'view-vehicles', 'view-trips', 'check-in-trips', 'check-out-trips',
             'capture-passenger-attendance', 'view-passenger-events',
+            'create-complaints', 'view-own-complaints',
             'view-drivers', 'view-schedules',
             'view-fuel-logs', 'create-fuel-logs',
             'view-notifications',
@@ -225,6 +241,7 @@ class RolePermissionSeeder extends Seeder
         $driver->syncPermissions([
             'view-trips', 'check-in-trips', 'check-out-trips',
             'capture-passenger-attendance', 'view-passenger-events',
+            'create-complaints', 'view-own-complaints',
             'view-schedules', 'view-fuel-logs', 'create-fuel-logs',
             'view-notifications',
         ]);
@@ -234,6 +251,7 @@ class RolePermissionSeeder extends Seeder
         $juniorDriver->syncPermissions([
             'view-trips', 'check-in-trips', 'check-out-trips',
             'capture-passenger-attendance', 'view-passenger-events',
+            'create-complaints', 'view-own-complaints',
             'view-schedules', 'view-notifications',
         ]);
 
@@ -241,6 +259,7 @@ class RolePermissionSeeder extends Seeder
         $seniorExecutive = Role::firstOrCreate(['name' => 'senior-executive', 'guard_name' => 'web']);
         $seniorExecutive->syncPermissions([
             'view-vehicles', 'view-trips', 'create-trips',
+            'create-complaints', 'view-own-complaints',
             'view-schedules', 'view-reports',
             'view-notifications',
         ]);
@@ -249,6 +268,7 @@ class RolePermissionSeeder extends Seeder
         $executive = Role::firstOrCreate(['name' => 'executive', 'guard_name' => 'web']);
         $executive->syncPermissions([
             'view-trips', 'create-trips', 'view-schedules',
+            'create-complaints', 'view-own-complaints',
             'view-notifications',
         ]);
     }

@@ -12,3 +12,6 @@ export type {
     Trip, TripPassenger, TripPassengerEvent, TripStop, TripRecurringGroup,
     TripAuditLog, TripVehicleAssignment, TripRouteAssignment,
 } from './trip';
+export type {
+    TripFeedback, TripFeedbackType, TripFeedbackCategory, TripFeedbackPriority, TripFeedbackStatus,
+} from './trip-feedback';

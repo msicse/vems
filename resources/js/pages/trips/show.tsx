@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, Trip, TripPassengerEvent } from '@/types';
+import { BreadcrumbItem, Trip, TripFeedback, TripPassengerEvent } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Building2,
@@ -24,7 +24,9 @@ import {
     Flag,
     MapPin,
     MessageSquare,
+    MessageSquareWarning,
     Play,
+    Plus,
     User,
     Users,
     XCircle,
@@ -68,6 +70,7 @@ type TripDepartmentWithHeadcount = {
 type TripDetails = Trip & {
     factories?: TripFactory[];
     departments?: TripDepartmentWithHeadcount[];
+    feedbackEntries?: TripFeedback[];
 };
 
 const getStatusBadge = (status: Trip['status']) => {
@@ -200,6 +203,7 @@ export default function ShowTrip({ trip }: { trip: TripDetails }) {
     const canManageAttendance = !['cancelled', 'rejected'].includes(trip.status);
     const canCaptureAttendance = checkPermission('capture-passenger-attendance', permissions);
     const canCorrectAttendance = checkPermission('correct-passenger-attendance', permissions);
+    const canCreateComplaint = checkPermission('create-complaints', permissions);
     const [dialogState, setDialogState] = useState<{
         mode: AttendanceMode;
         passenger: AttendanceTripPassenger;
@@ -685,6 +689,39 @@ export default function ShowTrip({ trip }: { trip: TripDetails }) {
                                 </CardContent>
                             </Card>
                         )}
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <MessageSquareWarning className="h-4 w-4" />
+                                    Feedback & Complaints
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {(trip.feedbackEntries ?? []).length === 0 && (
+                                    <p className="text-sm text-gray-500">Nothing submitted for this trip yet.</p>
+                                )}
+                                {(trip.feedbackEntries ?? []).map((entry) => (
+                                    <div key={entry.id} className="rounded-md border p-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-sm font-medium line-clamp-1">{entry.subject}</span>
+                                            <Badge variant="outline" className="shrink-0 text-xs capitalize">{entry.status.replace('_', ' ')}</Badge>
+                                        </div>
+                                        <p className="mt-1 text-xs capitalize text-gray-500">{entry.type}</p>
+                                    </div>
+                                ))}
+                                {canCreateComplaint && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => router.visit(route('complaints.create', { trip_id: trip.id }))}
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Submit Feedback / Complaint
+                                    </Button>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
