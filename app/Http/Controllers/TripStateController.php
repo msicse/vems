@@ -6,6 +6,7 @@ use App\Models\Trip;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Validation\ValidationException;
 
 class TripStateController extends Controller implements HasMiddleware
 {
@@ -13,8 +14,21 @@ class TripStateController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:approve-trips', only: ['approve', 'reject']),
-            new Middleware('permission:edit-trips', only: ['start', 'complete', 'cancel']),
+            new Middleware('permission:edit-trips', only: ['cancel']),
         ];
+    }
+
+    /**
+     * start()/complete() are reachable by anyone with edit-trips (managers/officers)
+     * or by the driver currently assigned to the trip's vehicle — they're the one who
+     * actually knows when the trip departed/ended. cancel() stays manager-only.
+     */
+    private function authorizeStartOrComplete(Request $request, Trip $trip): void
+    {
+        $user = $request->user();
+        $isAssignedDriver = $trip->vehicle && $trip->vehicle->driver_id === $user->id;
+
+        abort_unless($user->can('edit-trips') || $isAssignedDriver, 403);
     }
 
     /**
@@ -23,14 +37,11 @@ class TripStateController extends Controller implements HasMiddleware
     public function approve(Request $request, Trip $trip)
     {
         try {
-            if ($trip->status !== 'pending') {
+            if (!$trip->canTransitionTo('approved')) {
                 return back()->with('error', 'Trip cannot be approved in current status.');
             }
 
-            $trip->update([
-                'status' => 'approved',
-                'approved_by' => auth()->id(),
-            ]);
+            $trip->transitionTo('approved', ['approved_by' => auth()->id()]);
 
             return back()->with('success', 'Trip approved successfully!');
         } catch (\Exception $e) {
@@ -44,7 +55,7 @@ class TripStateController extends Controller implements HasMiddleware
     public function reject(Request $request, Trip $trip)
     {
         try {
-            if (!in_array($trip->status, ['pending', 'approved'])) {
+            if (!$trip->canTransitionTo('rejected')) {
                 return back()->with('error', 'Trip cannot be rejected in current status.');
             }
 
@@ -52,12 +63,11 @@ class TripStateController extends Controller implements HasMiddleware
                 'rejection_reason' => 'required|string',
             ]);
 
-            $trip->update([
-                'status' => 'rejected',
-                'rejection_reason' => $validated['rejection_reason'],
-            ]);
+            $trip->transitionTo('rejected', ['rejection_reason' => $validated['rejection_reason']]);
 
             return back()->with('success', 'Trip rejected.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to reject trip.');
         }
@@ -68,8 +78,10 @@ class TripStateController extends Controller implements HasMiddleware
      */
     public function start(Request $request, Trip $trip)
     {
+        $this->authorizeStartOrComplete($request, $trip);
+
         try {
-            if (!in_array($trip->status, ['approved', 'assigned'])) {
+            if (!$trip->canTransitionTo('in_progress')) {
                 return back()->with('error', 'Trip cannot be started in current status.');
             }
 
@@ -77,13 +89,11 @@ class TripStateController extends Controller implements HasMiddleware
                 'odometer_start' => 'nullable|numeric|min:0',
             ]);
 
-            $trip->update([
-                'status' => 'in_progress',
-                'actual_start_time' => now(),
-                'odometer_start' => $validated['odometer_start'] ?? null,
-            ]);
+            $trip->startTrip($validated['odometer_start'] ?? null);
 
             return back()->with('success', 'Trip started successfully!');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to start trip.');
         }
@@ -94,40 +104,26 @@ class TripStateController extends Controller implements HasMiddleware
      */
     public function complete(Request $request, Trip $trip)
     {
+        $this->authorizeStartOrComplete($request, $trip);
+
         try {
-            if ($trip->status !== 'in_progress') {
+            if (!$trip->canTransitionTo('completed')) {
                 return back()->with('error', 'Trip cannot be completed in current status.');
             }
 
             $validated = $request->validate([
                 'odometer_end' => 'required|numeric|min:' . ($trip->odometer_start ?? 0),
-                'fuel_consumed' => 'nullable|numeric|min:0',
-                'fuel_cost' => 'nullable|numeric|min:0',
-                'other_costs' => 'nullable|numeric|min:0',
+                'fuel_consumed' => 'nullable|numeric|min:0|max:2000',
+                'fuel_cost' => 'nullable|numeric|min:0|max:1000000',
+                'other_costs' => 'nullable|numeric|min:0|max:1000000',
                 'notes' => 'nullable|string',
             ]);
 
-            // Calculate total cost
-            $totalCost = ($validated['fuel_cost'] ?? 0) + ($validated['other_costs'] ?? 0);
-
-            $trip->update([
-                'status' => 'completed',
-                'actual_end_time' => now(),
-                'odometer_end' => $validated['odometer_end'],
-                'fuel_consumed' => $validated['fuel_consumed'] ?? null,
-                'fuel_cost' => $validated['fuel_cost'] ?? null,
-                'other_costs' => $validated['other_costs'] ?? null,
-                'total_cost' => $totalCost,
-                'notes' => $validated['notes'] ?? $trip->notes,
-            ]);
-
-            // Update driver's total distance if trip has vehicle with driver
-            if ($trip->vehicle && $trip->vehicle->driver && $trip->distance_traveled) {
-                $trip->vehicle->driver->increment('total_distance_covered', $trip->distance_traveled);
-                $trip->vehicle->driver->increment('total_trips_completed');
-            }
+            $trip->completeTrip($validated);
 
             return back()->with('success', 'Trip completed successfully!');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to complete trip.');
         }
@@ -139,13 +135,20 @@ class TripStateController extends Controller implements HasMiddleware
     public function cancel(Request $request, Trip $trip)
     {
         try {
-            if (!in_array($trip->status, ['pending', 'approved', 'assigned'])) {
+            if (!$trip->canTransitionTo('cancelled')) {
                 return back()->with('error', 'Trip cannot be cancelled in current status.');
             }
 
-            $trip->update(['status' => 'cancelled']);
+            $validated = $request->validate([
+                'cancellation_reason' => 'required|in:passenger_no_show,vehicle_breakdown,driver_unavailable,route_blocked,weather_conditions,emergency,other',
+                'cancellation_notes' => 'nullable|string',
+            ]);
+
+            $trip->cancel($validated['cancellation_reason'], $validated['cancellation_notes'] ?? null);
 
             return back()->with('success', 'Trip cancelled.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to cancel trip.');
         }

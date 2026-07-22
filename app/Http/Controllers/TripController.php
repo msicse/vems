@@ -23,9 +23,8 @@ class TripController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:view-trips', only: ['index', 'show', 'passengerEvents']),
             new Middleware('permission:create-trips', only: ['create', 'store', 'storeRecurring']),
-            new Middleware('permission:edit-trips', only: ['edit', 'update', 'start', 'complete', 'cancel', 'reassignVehicle']),
+            new Middleware('permission:edit-trips', only: ['edit', 'update', 'reassignVehicle']),
             new Middleware('permission:delete-trips', only: ['destroy']),
-            new Middleware('permission:approve-trips', only: ['approve', 'reject']),
         ];
     }
 
@@ -482,6 +481,7 @@ class TripController extends Controller implements HasMiddleware
             'vehicleRoute.routeStops.stop',
             'requester',
             'approver',
+            'cancelledBy',
             'department',
             'passengers.user',
             'passengers.pickupStop',
@@ -497,7 +497,18 @@ class TripController extends Controller implements HasMiddleware
         ]);
 
         $vehicleAssignments = $trip->vehicleAssignments()
+            ->with(['vehicle', 'assignedBy'])
             ->orderByDesc('assigned_at')
+            ->get();
+
+        $routeAssignments = $trip->routeAssignments()
+            ->with(['vehicleRoute', 'assignedBy'])
+            ->orderByDesc('assigned_at')
+            ->get();
+
+        $auditLogs = $trip->auditLogs()
+            ->with('user')
+            ->latest()
             ->get();
 
         // Get active vehicles for reassignment option
@@ -515,6 +526,8 @@ class TripController extends Controller implements HasMiddleware
         return Inertia::render('trips/show', [
             'trip' => $trip,
             'vehicleAssignments' => $vehicleAssignments,
+            'routeAssignments' => $routeAssignments,
+            'auditLogs' => $auditLogs,
             'availableVehicles' => $availableVehicles,
         ]);
     }

@@ -66,7 +66,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('vendors-select', [VendorController::class, 'getVendorsForSelect'])->name('vendors.select');
 
     Route::resource('users', UserController::class);
-    Route::get('/api/drivers/available', [DriverController::class, 'getAvailableDrivers'])->name('drivers.available');
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/api/drivers/available', [DriverController::class, 'getAvailableDrivers'])->name('drivers.available');
+    });
     Route::patch('/drivers/{user}/status', [DriverController::class, 'updateDriverStatus'])->name('drivers.update-status');
     Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
     Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
@@ -94,8 +96,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('routes', VehicleRouteController::class);
 
     // Stop management API routes
-    Route::get('/api/stops', [StopController::class, 'index'])->name('api.stops.index');
-    Route::post('/api/stops', [StopController::class, 'store'])->name('api.stops.store');
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/api/stops', [StopController::class, 'index'])->name('api.stops.index');
+        Route::post('/api/stops', [StopController::class, 'store'])->name('api.stops.store');
+    });
 
     // Trip management routes
     Route::post('/trips/recurring', [TripController::class, 'storeRecurring'])->name('trips.store-recurring');

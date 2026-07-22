@@ -46,10 +46,9 @@ class SetupMissingPermissions extends Command
             $this->line("  ✓ {$permission}");
         }
 
-        // Assign to roles (additive — does not remove existing permissions)
+        // Assign to roles (additive — does not remove existing permissions).
+        // super-admin isn't listed: Gate::before() short-circuits it regardless of permissions.
         $assignments = [
-            'Super Admin' => $newPermissions,
-            'Admin'       => $newPermissions,
             'transport-manager' => [
                 'view-factories', 'create-factories', 'edit-factories', 'delete-factories',
                 'view-logistics', 'create-logistics', 'edit-logistics', 'delete-logistics',
@@ -74,22 +73,11 @@ class SetupMissingPermissions extends Command
                 'view-routes',
                 'view-user-groups',
             ],
-            'Manager' => [
-                'view-factories', 'edit-factories',
-                'view-logistics', 'edit-logistics',
-                'view-routes',
-                'view-user-groups',
-            ],
             'department-head' => [
                 'view-factories',
                 'view-logistics',
                 'view-routes',
                 'view-user-groups',
-            ],
-            'Employee' => [
-                'view-factories',
-                'view-logistics',
-                'view-routes',
             ],
         ];
 

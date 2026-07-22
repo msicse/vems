@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Trip } from '@/types';
+import { canStartTrip } from '@/lib/trip-status';
 import { ArrowLeft, Edit, Play } from 'lucide-react';
 import { router } from '@inertiajs/react';
 
@@ -17,7 +18,7 @@ export function TripActionButtons({ trip, onOpenStartTrip }: TripActionButtonsPr
                     Edit Trip
                 </Button>
             )}
-            {['approved', 'assigned'].includes(trip.status) && (
+            {canStartTrip(trip.status) && (
                 <Button className="bg-green-600 hover:bg-green-700" onClick={onOpenStartTrip}>
                     <Play className="mr-2 h-4 w-4" />
                     Start Trip

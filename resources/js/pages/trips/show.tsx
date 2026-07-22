@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { BreadcrumbItem, Trip, TripFeedback, TripPassengerEvent } from '@/types';
+import { canStartTrip } from '@/lib/trip-status';
+import { BreadcrumbItem, Trip, TripAuditLog, TripFeedback, TripPassengerEvent, TripRouteAssignment, TripVehicleAssignment, User as UserType } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Building2,
@@ -71,6 +72,7 @@ type TripDetails = Trip & {
     factories?: TripFactory[];
     departments?: TripDepartmentWithHeadcount[];
     feedbackEntries?: TripFeedback[];
+    cancelledBy?: UserType;
 };
 
 const getStatusBadge = (status: Trip['status']) => {
@@ -110,13 +112,14 @@ const getPriorityBadge = (priority: Trip['priority']) => {
     );
 };
 
+// Only 'pending' | 'boarded' | 'completed' | 'no_show' are ever actually written to
+// TripPassenger.status by the app; 'confirmed'/'cancelled' remain in the DB enum but
+// are unreachable in practice, so no badge styling is defined for them.
 const getPassengerStatusBadge = (status?: string) => {
     const config = {
         pending: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300',
-        confirmed: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300',
         boarded: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300',
         completed: 'border-green-200 bg-green-100 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-300',
-        cancelled: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300',
         no_show: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300',
     } as const;
 
@@ -196,7 +199,16 @@ const buildFormDefaults = (mode: AttendanceMode, passenger: AttendanceTripPassen
     idempotency_key: '',
 });
 
-export default function ShowTrip({ trip }: { trip: TripDetails }) {
+type ShowTripProps = {
+    trip: TripDetails;
+    vehicleAssignments?: TripVehicleAssignment[];
+    routeAssignments?: TripRouteAssignment[];
+    auditLogs?: TripAuditLog[];
+};
+
+const formatAuditAction = (action: string) => action.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+export default function ShowTrip({ trip, vehicleAssignments = [], routeAssignments = [], auditLogs = [] }: ShowTripProps) {
     const pageProps = usePage().props as unknown as { auth?: { user?: unknown; permissions?: string[]; roles?: string[] } };
     const permissions = pageProps.auth?.permissions ?? [];
     const passengers = (trip.passengers ?? []) as AttendanceTripPassenger[];
@@ -645,6 +657,28 @@ export default function ShowTrip({ trip }: { trip: TripDetails }) {
                                         </div>
                                     </>
                                 )}
+                                {trip.status === 'rejected' && trip.rejection_reason && (
+                                    <>
+                                        <Separator />
+                                        <div>
+                                            <label className="text-xs font-medium text-gray-600">Rejection Reason</label>
+                                            <p className="mt-1 text-sm text-gray-700">{trip.rejection_reason}</p>
+                                        </div>
+                                    </>
+                                )}
+                                {trip.status === 'cancelled' && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium text-gray-600">Cancelled By</label>
+                                            <p className="mt-1 text-sm font-medium">{trip.cancelledBy?.name ?? 'Unknown'}</p>
+                                            {trip.cancellation_reason && (
+                                                <p className="text-sm capitalize text-gray-700">{trip.cancellation_reason.replace(/_/g, ' ')}</p>
+                                            )}
+                                            {trip.cancellation_notes && <p className="text-xs text-gray-500">{trip.cancellation_notes}</p>}
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -676,7 +710,7 @@ export default function ShowTrip({ trip }: { trip: TripDetails }) {
                                         </>
                                     )}
 
-                                    {['approved', 'assigned'].includes(trip.status) && (
+                                    {canStartTrip(trip.status) && (
                                         <Button
                                             className="w-full bg-green-600 hover:bg-green-700"
                                             onClick={openStartTripDialog}
@@ -724,6 +758,118 @@ export default function ShowTrip({ trip }: { trip: TripDetails }) {
                         </Card>
                     </div>
                 </div>
+
+                {vehicleAssignments.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Vehicle Assignment History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto rounded border">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Vehicle</th>
+                                            <th className="px-3 py-2 text-left">Assigned At</th>
+                                            <th className="px-3 py-2 text-left">Unassigned At</th>
+                                            <th className="px-3 py-2 text-left">Assigned By</th>
+                                            <th className="px-3 py-2 text-left">Reason</th>
+                                            <th className="px-3 py-2 text-left">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {vehicleAssignments.map((a) => (
+                                            <tr key={a.id} className="border-t">
+                                                <td className="px-3 py-2">{a.vehicle?.registration_number ?? '-'}</td>
+                                                <td className="px-3 py-2">{new Date(a.assigned_at).toLocaleString()}</td>
+                                                <td className="px-3 py-2">{a.unassigned_at ? new Date(a.unassigned_at).toLocaleString() : '-'}</td>
+                                                <td className="px-3 py-2">{a.assignedBy?.name ?? '-'}</td>
+                                                <td className="px-3 py-2 capitalize">{a.reason ?? '-'}</td>
+                                                <td className="px-3 py-2">
+                                                    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs ${a.is_current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                        {a.is_current ? 'Current' : 'Past'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {routeAssignments.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Route Assignment History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto rounded border">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Route</th>
+                                            <th className="px-3 py-2 text-left">Assigned At</th>
+                                            <th className="px-3 py-2 text-left">Unassigned At</th>
+                                            <th className="px-3 py-2 text-left">Assigned By</th>
+                                            <th className="px-3 py-2 text-left">Reason</th>
+                                            <th className="px-3 py-2 text-left">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {routeAssignments.map((a) => (
+                                            <tr key={a.id} className="border-t">
+                                                <td className="px-3 py-2">{a.vehicleRoute?.name ?? '-'}</td>
+                                                <td className="px-3 py-2">{new Date(a.assigned_at).toLocaleString()}</td>
+                                                <td className="px-3 py-2">{a.unassigned_at ? new Date(a.unassigned_at).toLocaleString() : '-'}</td>
+                                                <td className="px-3 py-2">{a.assignedBy?.name ?? '-'}</td>
+                                                <td className="px-3 py-2">{a.reason ?? '-'}</td>
+                                                <td className="px-3 py-2">
+                                                    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs ${a.is_current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                        {a.is_current ? 'Current' : 'Past'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {auditLogs.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Audit Log</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto rounded border">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">When</th>
+                                            <th className="px-3 py-2 text-left">Action</th>
+                                            <th className="px-3 py-2 text-left">By</th>
+                                            <th className="px-3 py-2 text-left">Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {auditLogs.map((log) => (
+                                            <tr key={log.id} className="border-t align-top">
+                                                <td className="px-3 py-2 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
+                                                <td className="px-3 py-2">{formatAuditAction(log.action)}</td>
+                                                <td className="px-3 py-2">{log.user?.name ?? '-'}</td>
+                                                <td className="px-3 py-2">{log.reason ?? '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             <Dialog open={startTripOpen} onOpenChange={(open) => !open && closeStartTripDialog()}>

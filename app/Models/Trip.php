@@ -36,6 +36,12 @@ class Trip extends Model
         'end_location',
         'is_return',
         'is_completed',
+        // start_time/end_time are back-filled automatically by TripObserver the moment
+        // status flips to in_progress/is_completed becomes true (see TripObserver::updating()).
+        // actual_start_time/actual_end_time are the same moment recorded explicitly by
+        // startTrip()/completeTrip() below. Both pairs exist for historical reasons and
+        // track in lockstep today — read start_time/end_time for duration math
+        // (getTripDuration()), actual_start_time/actual_end_time for display.
         'start_time',
         'end_time',
         'actual_start_time',
@@ -259,36 +265,19 @@ class Trip extends Model
         return "TRP-{$date}-" . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
-    public function canBeApproved(): bool
-    {
-        return $this->status === 'pending';
-    }
-
-    public function canBeRejected(): bool
-    {
-        return in_array($this->status, ['pending', 'approved']);
-    }
-
-    public function canBeStarted(): bool
-    {
-        return in_array($this->status, ['approved', 'assigned']);
-    }
-
-    public function canBeCompleted(): bool
-    {
-        return $this->status === 'in_progress';
-    }
-
-    public function canBeCancelled(): bool
-    {
-        return !in_array($this->status, ['completed', 'cancelled']);
-    }
-
+    /**
+     * Authoritative status-lifecycle check. This is the only source of truth for
+     * which transitions are legal — controllers and other model methods must go
+     * through this rather than re-implementing their own status checks.
+     *
+     * 'assigned' is a legacy intermediate status nothing currently sets, so
+     * 'approved' transitions straight to 'in_progress' in practice.
+     */
     public function canTransitionTo(string $newStatus): bool
     {
         return match($this->status) {
             'pending' => in_array($newStatus, ['approved', 'rejected', 'cancelled']),
-            'approved' => in_array($newStatus, ['assigned', 'rejected', 'cancelled']),
+            'approved' => in_array($newStatus, ['assigned', 'in_progress', 'rejected', 'cancelled']),
             'assigned' => in_array($newStatus, ['in_progress', 'cancelled']),
             'in_progress' => in_array($newStatus, ['completed', 'cancelled']),
             'completed', 'rejected', 'cancelled' => false,
@@ -296,14 +285,14 @@ class Trip extends Model
         };
     }
 
-    public function transitionTo(string $newStatus, ?string $reason = null): bool
+    public function transitionTo(string $newStatus, array $attributes = [], ?string $reason = null): bool
     {
         if (!$this->canTransitionTo($newStatus)) {
             return false;
         }
 
         $oldStatus = $this->status;
-        $this->update(['status' => $newStatus]);
+        $this->update(array_merge($attributes, ['status' => $newStatus]));
 
         // Log the transition
         TripAuditLog::create([
@@ -311,7 +300,7 @@ class Trip extends Model
             'user_id' => auth()->id(),
             'action' => 'status_changed',
             'old_values' => ['status' => $oldStatus],
-            'new_values' => ['status' => $newStatus],
+            'new_values' => array_merge($attributes, ['status' => $newStatus]),
             'reason' => $reason,
         ]);
 
@@ -320,7 +309,7 @@ class Trip extends Model
 
     public function cancel(string $reason, ?string $notes = null): bool
     {
-        if (!$this->canBeCancelled()) {
+        if (!$this->canTransitionTo('cancelled')) {
             return false;
         }
 
@@ -510,18 +499,19 @@ class Trip extends Model
     /**
      * Start the trip
      */
-    public function startTrip(?string $startLocation = null): bool
+    public function startTrip(?float $odometerStart = null, ?string $startLocation = null): bool
     {
-        if ($this->status !== 'assigned') {
+        if (!$this->canTransitionTo('in_progress')) {
             return false;
         }
 
         $this->update([
             'status' => 'in_progress',
-            'start_time' => now(),
+            'actual_start_time' => now(),
+            'odometer_start' => $odometerStart ?? $this->odometer_start,
             'start_location' => $startLocation ?? $this->start_location,
-            'is_completed' => false,
         ]);
+        // `start_time` is back-filled by TripObserver when status turns 'in_progress'.
 
         // Log the trip start
         TripAuditLog::create([
@@ -529,7 +519,8 @@ class Trip extends Model
             'user_id' => auth()->id(),
             'action' => 'trip_started',
             'new_values' => [
-                'start_time' => $this->start_time,
+                'actual_start_time' => $this->actual_start_time,
+                'odometer_start' => $this->odometer_start,
                 'start_location' => $this->start_location,
             ],
         ]);
@@ -538,20 +529,38 @@ class Trip extends Model
     }
 
     /**
-     * Complete the trip
+     * Complete the trip: records the final odometer/fuel/cost figures, marks the
+     * trip completed/is_completed (end_time is back-filled by TripObserver), and
+     * credits the assigned driver's lifetime distance/trip totals.
      */
-    public function completeTrip(?string $endLocation = null): bool
+    public function completeTrip(array $data = []): bool
     {
-        if ($this->status !== 'in_progress') {
+        if (!$this->canTransitionTo('completed')) {
             return false;
         }
 
+        $totalCost = ($data['fuel_cost'] ?? 0) + ($data['other_costs'] ?? 0);
+
         $this->update([
             'status' => 'completed',
-            'end_time' => now(),
-            'end_location' => $endLocation ?? $this->end_location,
+            'actual_end_time' => now(),
             'is_completed' => true,
+            'odometer_end' => $data['odometer_end'] ?? $this->odometer_end,
+            'fuel_consumed' => $data['fuel_consumed'] ?? $this->fuel_consumed,
+            'fuel_cost' => $data['fuel_cost'] ?? $this->fuel_cost,
+            'other_costs' => $data['other_costs'] ?? $this->other_costs,
+            'total_cost' => $totalCost,
+            'notes' => $data['notes'] ?? $this->notes,
+            'end_location' => $data['end_location'] ?? $this->end_location,
         ]);
+
+        // `distance_traveled` is a DB-generated column; refresh to read its new value.
+        $this->refresh();
+
+        if ($this->vehicle && $this->vehicle->driver && $this->distance_traveled) {
+            $this->vehicle->driver->increment('total_distance_covered', $this->distance_traveled);
+            $this->vehicle->driver->increment('total_trips_completed');
+        }
 
         // Log the trip completion
         TripAuditLog::create([
@@ -559,8 +568,9 @@ class Trip extends Model
             'user_id' => auth()->id(),
             'action' => 'trip_completed',
             'new_values' => [
-                'end_time' => $this->end_time,
-                'end_location' => $this->end_location,
+                'actual_end_time' => $this->actual_end_time,
+                'odometer_end' => $this->odometer_end,
+                'total_cost' => $this->total_cost,
                 'is_completed' => true,
             ],
         ]);

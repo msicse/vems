@@ -448,12 +448,14 @@ export interface TripVehicleAssignment {
     vehicle_id: number;
     assigned_by: number;
     assigned_at: string;
+    unassigned_at?: string;
     is_current: boolean;
+    reason?: string;
     notes?: string;
     created_at: string;
     updated_at: string;
     vehicle?: Vehicle;
-    assigned_by_user?: User;
+    assignedBy?: User;
 }
 
 export interface TripRouteAssignment {
@@ -462,12 +464,14 @@ export interface TripRouteAssignment {
     vehicle_route_id: number;
     assigned_by: number;
     assigned_at: string;
+    unassigned_at?: string;
     is_current: boolean;
+    reason?: string;
     notes?: string;
     created_at: string;
     updated_at: string;
-    vehicle_route?: VehicleRoute;
-    assigned_by_user?: User;
+    vehicleRoute?: VehicleRoute;
+    assignedBy?: User;
 }
 
 export interface Department {

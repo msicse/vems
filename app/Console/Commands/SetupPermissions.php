@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 
 class SetupPermissions extends Command
 {
@@ -21,127 +20,29 @@ class SetupPermissions extends Command
      *
      * @var string
      */
-    protected $description = 'Set up basic roles and permissions for the application';
+    protected $description = 'Set up roles and permissions for the application';
 
     /**
      * Execute the console command.
+     *
+     * This delegates to RolePermissionSeeder — the same seeder DatabaseSeeder
+     * runs and that AppServiceProvider's Gate::before(hasRole('super-admin'))
+     * depends on — rather than defining a second, disagreeing role/permission
+     * set (see PROJECT_IMPROVEMENTS.md 1.5).
      */
     public function handle()
     {
         $this->info('Setting up roles and permissions...');
 
-        // Create permissions
-        $permissions = [
-            // User permissions
-            'view-users',
-            'create-users',
-            'edit-users',
-            'delete-users',
+        (new RolePermissionSeeder())->run();
 
-            // Department permissions
-            'view-departments',
-            'create-departments',
-            'edit-departments',
-            'delete-departments',
+        $this->info('Roles and permissions created.');
 
-            // Vehicle permissions
-            'view-vehicles',
-            'create-vehicles',
-            'edit-vehicles',
-            'delete-vehicles',
-
-            // Stop permissions
-            'view-stops',
-            'create-stops',
-            'edit-stops',
-            'delete-stops',
-
-            // Product permissions
-            'view-products',
-            'create-products',
-            'edit-products',
-            'delete-products',
-
-            // Vendor permissions
-            'view-vendors',
-            'create-vendors',
-            'edit-vendors',
-            'delete-vendors',
-
-            // Dashboard and reports
-            'view-dashboard',
-            'view-reports',
-            'create-reports',
-            'export-reports',
-
-            // Role and permission management
-            'view-roles',
-            'create-roles',
-            'edit-roles',
-            'delete-roles',
-            'view-permissions',
-            'edit-permissions',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-            $this->info("Permission created: {$permission}");
-        }
-
-        // Create roles
-        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
-        $admin = Role::firstOrCreate(['name' => 'Admin']);
-        $manager = Role::firstOrCreate(['name' => 'Manager']);
-        $employee = Role::firstOrCreate(['name' => 'Employee']);
-        $driver = Role::firstOrCreate(['name' => 'Driver']);
-
-        // Assign all permissions to Super Admin
-        $superAdmin->syncPermissions($permissions);
-
-        // Assign most permissions to Admin (except role management)
-        $adminPermissions = array_filter($permissions, function($perm) {
-            return !str_contains($perm, 'roles') && !str_contains($perm, 'permissions');
-        });
-        $admin->syncPermissions($adminPermissions);
-
-        // Assign basic permissions to Manager
-        $managerPermissions = [
-            'view-users', 'edit-users',
-            'view-departments', 'edit-departments',
-            'view-vehicles', 'edit-vehicles',
-            'view-stops',
-            'view-products', 'edit-products',
-            'view-vendors', 'edit-vendors',
-            'view-dashboard', 'view-reports', 'export-reports'
-        ];
-        $manager->syncPermissions($managerPermissions);
-
-        // Assign view permissions to Employee
-        $employeePermissions = [
-            'view-departments',
-            'view-vehicles',
-            'view-stops',
-            'view-products',
-            'view-vendors',
-            'view-dashboard'
-        ];
-        $employee->syncPermissions($employeePermissions);
-
-        // Assign minimal permissions to Driver
-        $driverPermissions = [
-            'view-vehicles',
-            'view-stops',
-            'view-dashboard'
-        ];
-        $driver->syncPermissions($driverPermissions);
-
-        $this->info('Roles created and permissions assigned!');
-
-        // Assign Super Admin role to the first user
+        // Assign super-admin role to the first user
         $firstUser = User::first();
         if ($firstUser) {
-            $firstUser->assignRole('Super Admin');
-            $this->info("Super Admin role assigned to user: {$firstUser->name}");
+            $firstUser->assignRole('super-admin');
+            $this->info("super-admin role assigned to user: {$firstUser->name}");
         }
 
         $this->info('Permissions setup completed successfully!');
