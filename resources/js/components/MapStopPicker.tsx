@@ -157,8 +157,10 @@ export default function MapStopPicker({
                 type: 'geocoding';
             }> = [];
             if (query.length >= 3) {
+                // Bias/restrict results to Bangladesh: countrycodes hard-filters to BD,
+                // viewbox further prioritizes results within its bounding box (bounded=0 keeps it as a bias, not a hard cutoff)
                 const response = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&bounded=0`
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&countrycodes=bd&viewbox=88.0,26.7,92.7,20.5&bounded=0`
                 );
 
                 if (response.ok) {
