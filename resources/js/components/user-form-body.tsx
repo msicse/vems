@@ -90,6 +90,7 @@ interface UserFormBodyProps {
     userTypes: Array<{ value: string; label: string }>;
     vendorOptions?: Array<{ label: string; value: string }>;
     hideUserTypeAndRoles?: boolean;
+    hideUserType?: boolean;
     licenseClasses: Array<{ value: string; label: string }>;
     bloodGroups: Array<{ value: string; label: string }>;
     departmentOptions: Array<{ label: string; value: string }>;
@@ -112,6 +113,7 @@ export function UserFormBody({
     userTypes,
     vendorOptions = [],
     hideUserTypeAndRoles = false,
+    hideUserType = false,
     licenseClasses,
     bloodGroups,
     departmentOptions,
@@ -187,7 +189,7 @@ export function UserFormBody({
                         />
                     </div>
 
-                    <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                         <FormField
                             label="Email Address"
                             name="email"
@@ -198,7 +200,7 @@ export function UserFormBody({
                             placeholder="Enter email address"
                         />
 
-                        {!hideUserTypeAndRoles && (
+                        {!hideUserTypeAndRoles && !hideUserType && (
                             <FormSelect
                                 label="User Type"
                                 name="user_type"
@@ -231,7 +233,6 @@ export function UserFormBody({
                                 placeholder="Select roles..."
                                 required
                                 searchable
-                                description="Select one or more roles for this user"
                             />
                         )}
                     </div>

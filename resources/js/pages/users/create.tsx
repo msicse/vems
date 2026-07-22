@@ -64,10 +64,6 @@ export default function CreateUser({ departments, vendors, roles, userTypes, lic
       commonValidationRules.maxLength(50, 'Username must be less than 50 characters'),
     ],
     email: [commonValidationRules.email('Please enter a valid email address')],
-    user_type: [
-      commonValidationRules.required('User type is required'),
-      commonValidationRules.oneOf(['employee', 'driver', 'transport_manager', 'admin'], 'Invalid user type selected'),
-    ],
     roles: [
       (value) => {
         if (!value || value.length === 0) return 'At least one role is required';
@@ -139,7 +135,7 @@ export default function CreateUser({ departments, vendors, roles, userTypes, lic
   };
 
   const getFormCompletion = () => {
-    const requiredFields = ['name', 'username', 'user_type', 'roles', 'password', 'password_confirmation'];
+    const requiredFields = ['name', 'username', 'roles', 'password', 'password_confirmation'];
     if (showDriverFields) {
       requiredFields.push('driving_license_no', 'license_class', 'license_expiry_date');
     }
@@ -210,6 +206,7 @@ export default function CreateUser({ departments, vendors, roles, userTypes, lic
             onReset={() => reset()}
             roles={roles}
             userTypes={userTypes}
+            hideUserType
             vendorOptions={vendorOptions}
             licenseClasses={licenseClasses}
             bloodGroups={bloodGroups}
